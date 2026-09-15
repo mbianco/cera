@@ -3,7 +3,8 @@
  *
  * Built on DeepSeek Harness (dsh), a TypeScript/Node agent framework.
  * Phase 1 (dsh-adapter), Phase 2 (scheduling, environment-management,
- * provenance), and Phase 3 (data-management) are implemented.
+ * provenance), Phase 3 (data-management), and Phase 4
+ * (tool-invocation, CaseService) are implemented.
  */
 
 // Shared types (value objects, entities, events, errors)
@@ -19,3 +20,6 @@ export * from './provenance';
 
 // Phase 3 modules
 export * from './data-management';
+
+// Phase 4 modules
+export * from './tool-invocation';

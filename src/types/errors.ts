@@ -536,6 +536,7 @@ export abstract class DataError extends CeraError {
 export class LocationNotReadable extends DataError {
   readonly kind = 'location_not_readable';
   readonly severity = 'HIGH' as const;
+  readonly cause: 'enoent' | 'eacces' | 'slow';
 
   constructor(props: { path: string; cause: 'enoent' | 'eacces' | 'slow' }) {
     super({
@@ -544,12 +545,14 @@ export class LocationNotReadable extends DataError {
       recoveryHint: 'Verify the path or select a different Dataset.',
       specRef: 'invariants.md INV-D4; failure-modes.md FM-D3',
     });
+    this.cause = props.cause;
   }
 }
 
 export class LocationNotWritable extends DataError {
   readonly kind = 'location_not_writable';
   readonly severity = 'HIGH' as const;
+  readonly cause: 'enoent' | 'eacces' | 'slow';
 
   constructor(props: { path: string; cause: 'enoent' | 'eacces' | 'slow' }) {
     super({
@@ -558,6 +561,7 @@ export class LocationNotWritable extends DataError {
       recoveryHint: 'Verify the path, permissions, or available quota.',
       specRef: 'invariants.md INV-D4; failure-modes.md FM-D3',
     });
+    this.cause = props.cause;
   }
 }
 

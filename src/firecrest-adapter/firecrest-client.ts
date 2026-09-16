@@ -72,7 +72,18 @@ export class FirecrestClientImpl implements FirecrestClient {
   #transferMethod: 's3' | 'streamer' | 'wormhole';
 
   constructor(config: FirecrestConfig) {
-    this.#firecrestUrl = config.firecrestUrl.replace(/\/$/, '');
+    // FCREST-04: Validate firecrestUrl is HTTPS. Reject non-HTTPS
+    // URLs to prevent the JWT token from being sent in cleartext.
+    const url = config.firecrestUrl.replace(/\/$/, '');
+    if (!url.startsWith('https://')) {
+      throw new Error(
+        `firecrestUrl must be an HTTPS URL (got: ${url}). ` +
+        'The JWT token is sent in the Authorization header — ' +
+        'non-HTTPS URLs would expose it in cleartext (FCREST-04).',
+      );
+    }
+
+    this.#firecrestUrl = url;
     this.#systemName = config.systemName;
     this.#tokenProvider = config.tokenProvider;
     this.#requestTimeoutMs = config.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
@@ -223,6 +234,10 @@ export class FirecrestClientImpl implements FirecrestClient {
           headers,
           body,
           signal: controller.signal,
+          // FCREST-04: Disable automatic redirect following to
+          // prevent the JWT token from being sent to a different
+          // host (e.g., attacker-controlled redirect target).
+          redirect: 'manual',
         });
       } catch (error) {
         clearTimeout(timeoutHandle);

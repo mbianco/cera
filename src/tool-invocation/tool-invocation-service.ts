@@ -55,6 +55,7 @@ import type {
   CLITool,
   Dataset,
   Environment,
+  EnvironmentId,
   ExitOutcome,
   JobId,
   JobState,
@@ -345,10 +346,16 @@ function environmentMatchesTool(
 
 /**
  * Constructor parameters for ToolInvocationServiceImpl.
+ *
+ * `environment` is optional (FCREST-01). When absent (FirecREST
+ * backend), the Environment verification step is skipped — uenv
+ * is embedded in the Job script by FirecrestShellExecutor
+ * (F-INV-5). A placeholder EnvironmentId is used for
+ * ProvenanceRecord.
  */
 export interface ToolInvocationServiceImplProps {
   readonly catalog: ToolCatalogService;
-  readonly environment: EnvironmentService;
+  readonly environment?: EnvironmentService;
   readonly dataManagement: DataManagementService;
   readonly provenance: ProvenanceService;
   readonly scheduling: SchedulingService;
@@ -377,7 +384,7 @@ export interface ToolInvocationServiceImplProps {
  */
 export class ToolInvocationServiceImpl implements ToolInvocationService {
   #catalog: ToolCatalogService;
-  #environment: EnvironmentService;
+  #environment: EnvironmentService | null;
   #dataManagement: DataManagementService;
   #provenance: ProvenanceService;
   #scheduling: SchedulingService;
@@ -389,7 +396,8 @@ export class ToolInvocationServiceImpl implements ToolInvocationService {
 
   constructor(props: ToolInvocationServiceImplProps) {
     this.#catalog = props.catalog;
-    this.#environment = props.environment;
+    this.#environment = props.environment ?? null;
+    this.#dataManagement = props.dataManagement;
     this.#dataManagement = props.dataManagement;
     this.#provenance = props.provenance;
     this.#scheduling = props.scheduling;
@@ -530,42 +538,63 @@ export class ToolInvocationServiceImpl implements ToolInvocationService {
 
     // ================================================================
     // Step 5: Verify Environment (INV-T1, INV-E2)
+    //
+    // FCREST-01: When EnvironmentService is absent (FirecREST
+    // backend), the Environment verification step is skipped.
+    // uenv is embedded in the Job script by FirecrestShellExecutor
+    // (F-INV-5). A placeholder EnvironmentId is used for
+    // ProvenanceRecord.
     // ================================================================
-    const activeEnv = this.#environment.getActiveEnvironment();
-    if (activeEnv === null) {
-      throw new EnvironmentNotLoaded({
-        toolId: tool.id,
-        environmentId: undefined,
-      });
-    }
+    let activeEnv: Environment | null = null;
+    let envIdForProvenance: EnvironmentId = 'firecrest-backend' as EnvironmentId;
+    let envDescriptionForProvenance = 'uenv loaded in Job script (F-INV-5)';
 
-    if (!environmentMatchesTool(activeEnv, tool)) {
-      throw new EnvironmentNotLoaded({
-        toolId: tool.id,
-        environmentId: activeEnv.id,
-      });
-    }
-
-    // Re-verify immediately before execution (X1 "out-of-order" case)
-    try {
-      const verified = await this.#environment.verifyEnvironment(
-        activeEnv.id,
-      );
-      if (!verified) {
+    if (this.#environment !== null) {
+      activeEnv = this.#environment.getActiveEnvironment();
+      if (activeEnv === null) {
         throw new EnvironmentNotLoaded({
           toolId: tool.id,
-          environmentId: activeEnv.id,
+          environmentId: undefined,
         });
       }
-    } catch (error) {
-      if (error instanceof EnvironmentNotLoaded) {
-        throw error;
+
+      if (!environmentMatchesTool(activeEnv, tool)) {
+        throw new EnvironmentNotLoaded({
+          toolId: tool.id,
+          environmentId: envIdForProvenance,
+        });
       }
-      throw new EnvironmentNotLoaded({
-        toolId: tool.id,
-        environmentId: activeEnv.id,
-        cause: error,
-      });
+
+      // Re-verify immediately before execution (X1 "out-of-order" case)
+      try {
+        const verified = await this.#environment.verifyEnvironment(
+          activeEnv.id,
+        );
+        if (!verified) {
+          throw new EnvironmentNotLoaded({
+            toolId: tool.id,
+      environmentId: envIdForProvenance,
+          });
+        }
+      } catch (error) {
+        if (error instanceof EnvironmentNotLoaded) {
+          throw error;
+        }
+        throw new EnvironmentNotLoaded({
+          toolId: tool.id,
+          environmentId: envIdForProvenance,
+          cause: error,
+        });
+      }
+
+      envIdForProvenance = activeEnv.id;
+      envDescriptionForProvenance = this.#buildEnvironmentDescription(activeEnv);
+    } else {
+      // FirecREST backend: no EnvironmentService. Use a placeholder
+      // for the ProvenanceRecord. The actual uenv is loaded in the
+      // Job script (F-INV-5).
+      envIdForProvenance = 'firecrest-backend' as EnvironmentId;
+      envDescriptionForProvenance = 'uenv loaded in Job script (F-INV-5)';
     }
 
     // ================================================================
@@ -580,7 +609,7 @@ export class ToolInvocationServiceImpl implements ToolInvocationService {
       parameters: request.parameters,
       inputDatasetIds: request.inputDatasetIds,
       outputDatasetIds: [],
-      environmentId: activeEnv.id,
+      environmentId: envIdForProvenance,
       state: 'NOT_STARTED',
       exitOutcome: null,
       permissiveExitCodes: request.permissiveExitCodes ?? [],
@@ -618,7 +647,7 @@ export class ToolInvocationServiceImpl implements ToolInvocationService {
     this.#emitEvent({
       kind: 'tool_invocation_started',
       invocationId,
-      environmentId: activeEnv.id,
+      environmentId: envIdForProvenance,
       executionModel: request.executionModel,
       timestamp: new Date(),
     });
@@ -678,7 +707,7 @@ export class ToolInvocationServiceImpl implements ToolInvocationService {
       //
       // The DatasetId is pre-generated so that the ProvenanceRecord
       // can reference it before the Dataset is registered.
-      const envDescription = this.#buildEnvironmentDescription(activeEnv);
+      const envDescription = envDescriptionForProvenance;
       const outputDatasetId = generateDatasetId();
 
       // Step 1: Write ProvenanceRecord (X4) — BEFORE Dataset
@@ -687,7 +716,7 @@ export class ToolInvocationServiceImpl implements ToolInvocationService {
         toolName: tool.name,
         toolVersion: tool.version,
         parameters: request.parameters,
-        environmentId: activeEnv.id,
+        environmentId: envIdForProvenance,
         environmentDescription: envDescription,
         inputDatasetIds: request.inputDatasetIds,
         outputDatasetId,
@@ -743,14 +772,14 @@ export class ToolInvocationServiceImpl implements ToolInvocationService {
 
     // Failure: write ProvenanceRecord (with null output), do NOT
     // register output Dataset (INV-T3)
-    const envDescription = this.#buildEnvironmentDescription(activeEnv);
+    const envDescription = envDescriptionForProvenance;
 
     await this.#provenance.writeProvenanceRecord({
       toolId: tool.id,
       toolName: tool.name,
       toolVersion: tool.version,
       parameters: request.parameters,
-      environmentId: activeEnv.id,
+      environmentId: envIdForProvenance,
       environmentDescription: envDescription,
       inputDatasetIds: request.inputDatasetIds,
       outputDatasetId: null,

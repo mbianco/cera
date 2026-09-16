@@ -11,6 +11,7 @@
 
 import type { ShellExecutor, SubprocessRunner, FilesystemGateway } from '../dsh-adapter/types';
 import type { SchedulingService } from '../scheduling/types';
+import type { ResourceRequest } from '../types';
 
 // ============================================================================
 // JwtTokenProvider
@@ -75,6 +76,15 @@ export interface FirecrestConfig {
   readonly maxFileSynchronousBytes?: number;
   /** Transfer method for large files. Default: "streamer". */
   readonly transferMethod?: 's3' | 'streamer' | 'wormhole';
+  /**
+   * Default ResourceRequest for ToolInvocations that don't specify
+   * one (FCREST-05). Under the FirecREST backend, ALL ToolInvocations
+   * are submitted as SLURM Jobs (F-INV-6) — even those that were
+   * "synchronous" under the local backend. This default provides
+   * minimal resources (1 node, 1 core, 1GB, 10 min) for short
+   * commands like `cdo -timmean`.
+   */
+  readonly defaultResourceRequest?: ResourceRequest;
 }
 
 export const DEFAULT_FIRECREST_CONFIG: Required<FirecrestConfig> = {
@@ -87,6 +97,17 @@ export const DEFAULT_FIRECREST_CONFIG: Required<FirecrestConfig> = {
   retryBackoffMultiplier: 2,
   maxFileSynchronousBytes: 5_000_000,
   transferMethod: 'streamer',
+  // FCREST-05: Default ResourceRequest for synchronous ToolInvocations
+  // that become Jobs under FirecREST. Minimal resources for short
+  // commands like `cdo -timmean`.
+  defaultResourceRequest: {
+    nodes: 1,
+    coresPerNode: 1,
+    memory: '1GB',
+    wallTime: '00:10:00', // 10 minutes
+    partition: 'normal',
+    qos: 'default',
+  },
 };
 
 // ============================================================================

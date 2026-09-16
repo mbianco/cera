@@ -23,3 +23,6 @@ export * from './data-management';
 
 // Phase 4 modules
 export * from './tool-invocation';
+
+// Phase 5 modules
+export * from './agent-interaction';

@@ -1,0 +1,31 @@
+site_name: cera
+site_description: AI agent for climate scientists on the Alps supercomputer
+site_url: https://mbianco.github.io/cera/
+repo_url: https://github.com/mbianco/cera
+repo_name: mbianco/cera
+edit_uri: blob/main/docs/
+
+theme:
+  name: readthedocs
+  highlightjs: true
+  hljs_languages:
+    - typescript
+    - bash
+    - yaml
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Architecture: architecture/index.md
+  - API Reference: api-reference/index.md
+  - ADRs: adrs/index.md
+
+plugins: []
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - footnotes
+  - tables
+  - toc:
+      permalink: true

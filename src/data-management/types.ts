@@ -33,10 +33,17 @@ import type {
  * `producerToolInvocationId` is null for manually registered Datasets
  * (e.g., a User provides an existing NetCDF file).
  *
+ * `id` is optional. When provided (e.g., by ToolInvocationService
+ * to write ProvenanceRecord before registering the Dataset —
+ * FINDING-I1 fix), the registry uses it verbatim. When omitted, the
+ * registry generates a new unique ID. If a Dataset with the same ID
+ * already exists, an error is thrown.
+ *
  * Spec: api-contracts.md §5 (RegisterDatasetInput); invariants.md
- * INV-D1, INV-D2.
+ * INV-D1, INV-D2; FINDING-I1 (Provenance before Dataset).
  */
 export interface RegisterDatasetInput {
+  readonly id?: DatasetId;
   readonly name: string;
   readonly location: Location;
   readonly format: Format;

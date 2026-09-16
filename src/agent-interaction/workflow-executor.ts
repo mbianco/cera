@@ -300,8 +300,12 @@ export class WorkflowExecutor {
     step: WorkflowStep,
     _tool: Tool,
   ): Promise<StepExecutionResult> {
-    // Build the output location
-    const outputLocation = this.#deriveOutputLocation(step);
+   // Build the output location (FINDING-I2: the derived output
+   // location is passed explicitly through ToolInvocationRequest,
+   // making the contract between WorkflowExecutor and
+   // ToolInvocationService explicit. The ToolInvocationService
+   // uses this location verbatim — it does not compute its own.)
+   const outputLocation = await this.#deriveOutputLocation(step);
 
     // Build the ToolInvocationRequest
     const request: ToolInvocationRequest = {
@@ -423,25 +427,25 @@ export class WorkflowExecutor {
   /**
    * Derives the output Location for a ToolInvocationRequest.
    *
-   * If the step has an `outputDatasetId` and that Dataset exists
-   * in data-management, the Dataset's location is used.
-   *
-   * Otherwise, a default output location is derived from the
+   * FINDING-I2 fix: If the step has an `outputDatasetId` and that
+   * Dataset exists in data-management, the Dataset's location is
+   * used. Otherwise, a default output location is derived from the
    * step name and the configured `outputBasePath`.
+   *
+   * The derived location is passed explicitly through
+   * ToolInvocationRequest.outputLocation. The ToolInvocationService
+   * uses it verbatim — it does not compute its own. This makes the
+   * contract between the two modules explicit.
    */
-  #deriveOutputLocation(step: WorkflowStep): Location {
+  async #deriveOutputLocation(step: WorkflowStep): Promise<Location> {
     // If the output Dataset exists, use its location
     if (step.outputDatasetId !== undefined) {
-      // We can't await in a non-async method, so we use a
-      // synchronous check. The data-management mock stores
-      // Datasets in a Map, so we can check synchronously.
-      // In production, the outputLocation would be determined
-      // by the WorkflowService before calling the executor.
-      //
-      // For now, use the default if the outputDatasetId is
-      // not known. The actual location is set by the
-      // ToolInvocationService when it registers the output.
-      // No synchronous access — use default.
+      const existingDataset = await this.#dataManagement.queryDataset(
+        step.outputDatasetId,
+      );
+      if (existingDataset !== null) {
+        return existingDataset.location;
+      }
     }
 
     // Default output location

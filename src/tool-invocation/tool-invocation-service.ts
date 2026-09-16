@@ -49,6 +49,7 @@ import type { SchedulingService } from '../scheduling/types';
 import type { EnvironmentService } from '../environment-management/types';
 import type { ProvenanceService } from '../provenance/types';
 import type { DataManagementService } from '../data-management/types';
+import { generateDatasetId } from '../data-management';
 import type {
   AsyncObservable,
   CLITool,
@@ -669,21 +670,18 @@ export class ToolInvocationServiceImpl implements ToolInvocationService {
     const isSuccess = this.#isSuccess(exitOutcome, request.permissiveExitCodes);
 
     if (isSuccess) {
-      // Success: write ProvenanceRecord (with output), register
-      // output Dataset, mark consumable (INV-T3)
+      // FINDING-I1 fix: ProvenanceRecord written BEFORE Dataset
+      // registration. If the process crashes between the two, an
+      // orphan ProvenanceRecord (pointing to nothing) is benign.
+      // An orphan Dataset without Provenance would risk scientific
+      // integrity (INV-D3).
+      //
+      // The DatasetId is pre-generated so that the ProvenanceRecord
+      // can reference it before the Dataset is registered.
       const envDescription = this.#buildEnvironmentDescription(activeEnv);
+      const outputDatasetId = generateDatasetId();
 
-      // Register output Dataset
-      const outputDataset = await this.#dataManagement.registerDataset({
-        name: deriveDatasetName(request.outputLocation),
-        location: request.outputLocation,
-        format: tool.outputFormats[0] ?? 'netcdf',
-        grid: deriveOutputGrid(inputDatasets),
-        variables: deriveOutputVariables(inputDatasets),
-        producerToolInvocationId: invocationId,
-      });
-
-      // Write ProvenanceRecord (X4)
+      // Step 1: Write ProvenanceRecord (X4) — BEFORE Dataset
       const provenanceRecord = await this.#provenance.writeProvenanceRecord({
         toolId: tool.id,
         toolName: tool.name,
@@ -692,14 +690,25 @@ export class ToolInvocationServiceImpl implements ToolInvocationService {
         environmentId: activeEnv.id,
         environmentDescription: envDescription,
         inputDatasetIds: request.inputDatasetIds,
-        outputDatasetId: outputDataset.id,
+        outputDatasetId,
         exitOutcome,
         timestamp: new Date(),
         jobId,
         jobState,
       });
 
-      // Mark output Dataset as consumable (INV-D3 / INV-P3)
+      // Step 2: Register output Dataset (INV-T3 — only on success)
+      const outputDataset = await this.#dataManagement.registerDataset({
+        id: outputDatasetId,
+        name: deriveDatasetName(request.outputLocation),
+        location: request.outputLocation,
+        format: tool.outputFormats[0] ?? 'netcdf',
+        grid: deriveOutputGrid(inputDatasets),
+        variables: deriveOutputVariables(inputDatasets),
+        producerToolInvocationId: invocationId,
+      });
+
+      // Step 3: Mark output Dataset as consumable (INV-D3 / INV-P3)
       await this.#dataManagement.markConsumable(outputDataset.id);
 
       // Update invocation with output dataset

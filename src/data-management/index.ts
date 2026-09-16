@@ -55,4 +55,5 @@ export type { LocationValidatorProps } from './location-validator';
 // Service implementation
 export {
   DataManagementServiceImpl,
+  generateDatasetId,
 } from './data-management-service';

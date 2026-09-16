@@ -94,8 +94,12 @@ export interface DataManagementServiceImplProps {
  * Format: `ds-<timestamp>-<random>` where timestamp is the current
  * time in milliseconds and random is a short random string. This
  * ensures uniqueness without requiring a centralized ID generator.
+ *
+ * Exported so that ToolInvocationServiceImpl can pre-generate an ID
+ * and write the ProvenanceRecord before registering the Dataset
+ * (FINDING-I1 fix).
  */
-function generateDatasetId(): DatasetId {
+export function generateDatasetId(): DatasetId {
   const timestamp = Date.now();
   const random = Math.random().toString(36).slice(2, 10);
   return `ds-${timestamp}-${random}` as DatasetId;
@@ -163,9 +167,18 @@ export class DataManagementServiceImpl implements DataManagementService {
     // INV-D4: Validate Location is readable before registering
     await this.validateLocation(input.location, 'read');
 
+    // FINDING-I1: Use provided ID if given (for Provenance-before-
+    // Dataset ordering), otherwise generate one.
+    const id = input.id ?? generateDatasetId();
+
+    // Check for duplicate ID
+    if (this.#registry.has(id)) {
+      throw new Error(`Dataset with ID '${id as string}' already exists.`);
+    }
+
     // Create the new Dataset (INV-D1 — frozen, new identity)
     const dataset: Dataset = Object.freeze({
-      id: generateDatasetId(),
+      id,
       name: input.name,
       location: input.location,
       format: input.format,

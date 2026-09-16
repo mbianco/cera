@@ -1,7 +1,11 @@
 # Docs — Build and deploy to GitHub Pages
 #
-# Builds the MkDocs site and deploys to github.io. Runs on every
-# push to main that changes files in docs/ or mkdocs.yml.
+# Builds the MkDocs site and deploys to GitHub Pages using the
+# official actions/deploy-pages action (no manual gh-pages branch
+# management needed).
+#
+# Runs on every push to main that changes files in docs/ or
+# mkdocs.yml, plus on workflow_dispatch.
 
 name: Docs
 
@@ -14,16 +18,22 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
 jobs:
-  build-deploy:
-    name: Build and deploy to GitHub Pages
+  build:
+    name: Build docs
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -36,7 +46,23 @@ jobs:
       - name: Build site
         run: mkdocs build --strict
 
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
       - name: Deploy to GitHub Pages
-        run: |
-          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/mbianco/cera.git
-          mkdocs gh-deploy --force --no-history
+        id: deployment
+        uses: actions/deploy-pages@v4

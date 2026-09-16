@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><link rel="canonical" href="https://mbianco.github.io/cera/api-reference/" />
+      <link rel="shortcut icon" href="../img/favicon.ico" />
+    <title>API Reference - cera</title>
+    <link rel="stylesheet" href="../css/theme.css" />
+    <link rel="stylesheet" href="../css/theme_extra.css" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" />
+    
+      <script>
+        // Current page data
+        var mkdocs_page_name = "API Reference";
+        var mkdocs_page_input_path = "api-reference/index.md";
+        var mkdocs_page_url = "/cera/api-reference/";
+      </script>
+    
+    <!--[if lt IE 9]>
+      <script src="../js/html5shiv.min.js"></script>
+    <![endif]-->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/typescript.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/bash.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/yaml.min.js"></script>
+      <script>hljs.highlightAll();</script> 
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+    <div class="wy-side-scroll">
+      <div class="wy-side-nav-search">
+          <a href=".." class="icon icon-home"> cera
+        </a>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="..">Home</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../getting-started/">Getting Started</a>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../architecture/">Architecture</a>
+                </li>
+              </ul>
+              <ul class="current">
+                <li class="toctree-l1 current"><a class="reference internal current" href="#">API Reference</a>
+    <ul class="current">
+    <li class="toctree-l2"><a class="reference internal" href="#module-index">Module index</a>
+        <ul>
+    <li class="toctree-l3"><a class="reference internal" href="#dsh-adapter-local-backend">dsh-adapter — Local backend</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#firecrest-adapter-remote-backend">firecrest-adapter — Remote backend</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#scheduling-slurm-job-management">scheduling — SLURM job management</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#environment-management-uenv-management">environment-management — uenv management</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#provenance-immutable-records">provenance — Immutable records</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#data-management-dataset-lifecycle">data-management — Dataset lifecycle</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#tool-invocation-tool-execution-cesm">tool-invocation — Tool execution + CESM</a>
+    </li>
+    <li class="toctree-l3"><a class="reference internal" href="#agent-interaction-llm-facing-surface">agent-interaction — LLM-facing surface</a>
+    </li>
+        </ul>
+    </li>
+    <li class="toctree-l2"><a class="reference internal" href="#error-hierarchy">Error hierarchy</a>
+    </li>
+    </ul>
+                </li>
+              </ul>
+              <ul>
+                <li class="toctree-l1"><a class="reference internal" href="../adrs/">ADRs</a>
+                </li>
+              </ul>
+      </div>
+    </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+      <nav class="wy-nav-top" role="navigation" aria-label="Mobile navigation menu">
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="..">cera</a>
+        
+      </nav>
+      <div class="wy-nav-content">
+        <div class="rst-content"><div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href=".." class="icon icon-home" aria-label="Docs"></a></li>
+      <li class="breadcrumb-item active">API Reference</li>
+    <li class="wy-breadcrumbs-aside">
+          <a href="https://github.com/mbianco/cera/blob/main/docs/api-reference/index.md">Edit on mbianco/cera</a>
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+            <div class="section" itemprop="articleBody">
+              
+                <h1 id="api-reference">API Reference<a class="headerlink" href="#api-reference" title="Permanent link">&para;</a></h1>
+<p>cera's public surface consists of 7 modules, each exporting a set
+of TypeScript interfaces. All interfaces are backend-agnostic —
+the same interface works with both the local (dsh-adapter) and
+FirecREST (firecrest-adapter) backends.</p>
+<h2 id="module-index">Module index<a class="headerlink" href="#module-index" title="Permanent link">&para;</a></h2>
+<h3 id="dsh-adapter-local-backend">dsh-adapter — Local backend<a class="headerlink" href="#dsh-adapter-local-backend" title="Permanent link">&para;</a></h3>
+<p>Wraps dsh's extension points (<code>ctx.shell</code>, <code>ctx.subprocess</code>,
+<code>ctx.sandbox</code>, <code>ctx.fs</code>, <code>ctx.jobs</code>, <code>ctx.tools</code>, <code>ctx.commands</code>)
+into stable cera-internal interfaces. This is the only module
+that imports dsh directly (ADR-005).</p>
+<table>
+<thead>
+<tr>
+<th>Interface</th>
+<th>Wraps</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ShellExecutor</code></td>
+<td><code>ctx.shell</code></td>
+<td>CLI tool execution (CDO, NCO)</td>
+</tr>
+<tr>
+<td><code>SubprocessRunner</code></td>
+<td><code>ctx.subprocess</code></td>
+<td>Fine-grained process control with streaming</td>
+</tr>
+<tr>
+<td><code>SandboxRunner</code></td>
+<td><code>ctx.sandbox</code></td>
+<td>Process confinement for legacy binaries</td>
+</tr>
+<tr>
+<td><code>FilesystemGateway</code></td>
+<td><code>ctx.fs</code></td>
+<td>Filesystem access and validation</td>
+</tr>
+<tr>
+<td><code>JobBackend</code></td>
+<td><code>ctx.jobs</code></td>
+<td>Background work submission</td>
+</tr>
+<tr>
+<td><code>ToolRegistry</code></td>
+<td><code>ctx.tools</code></td>
+<td>Model-facing capability registration</td>
+</tr>
+<tr>
+<td><code>CommandRegistry</code></td>
+<td><code>ctx.commands</code></td>
+<td>Human-command dispatch</td>
+</tr>
+</tbody>
+</table>
+<pre class="codehilite"><code class="language-typescript">import { createDshAdapter } from 'cera';
+
+const adapter = createDshAdapter(dshContext);
+// adapter.shellExecutor, adapter.subprocessRunner, adapter.filesystemGateway, ...
+</code></pre>
+
+<h3 id="firecrest-adapter-remote-backend">firecrest-adapter — Remote backend<a class="headerlink" href="#firecrest-adapter-remote-backend" title="Permanent link">&para;</a></h3>
+<p>Implements the same interfaces as dsh-adapter via FirecREST's REST
+API (ADR-011). All ToolInvocations are submitted as SLURM Jobs
+(F-INV-6). Authentication is OIDC (JWT Bearer token, F-INV-2).</p>
+<pre class="codehilite"><code class="language-typescript">import { createFirecrestBackend, OidcTokenProvider } from 'cera';
+
+const backend = createFirecrestBackend({
+  firecrestUrl: 'https://firecrest.cscs.ch',
+  systemName: 'daint',
+  tokenProvider: new OidcTokenProvider({
+    tokenEndpoint: 'https://idp.cscs.ch/auth/realms/cscs/protocol/openid-connect/token',
+    clientId: 'cera-client',
+    clientSecret: process.env.CERA_CLIENT_SECRET!,
+  }),
+});
+// backend.shellExecutor, backend.subprocessRunner, backend.filesystemGateway, ...
+</code></pre>
+
+<h3 id="scheduling-slurm-job-management">scheduling — SLURM job management<a class="headerlink" href="#scheduling-slurm-job-management" title="Permanent link">&para;</a></h3>
+<p>Submits Jobs via <code>sbatch</code>, queries state via <code>squeue</code> (active) and
+<code>sacct</code> (historical), cancels via <code>scancel</code>. SLURM-only (ADR-004).</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>submitJob(request)</code></td>
+<td>Submit a Job, returns Job with SLURM-assigned JobID (INV-S3)</td>
+</tr>
+<tr>
+<td><code>queryJob(jobId)</code></td>
+<td>Query Job state — authoritative from SLURM (INV-S1)</td>
+</tr>
+<tr>
+<td><code>queryJobsByUser(username)</code></td>
+<td>Query all Jobs for a User (proactive reporting, R7)</td>
+</tr>
+<tr>
+<td><code>cancelJob(jobId)</code></td>
+<td>Cancel a Job via <code>scancel</code></td>
+</tr>
+<tr>
+<td><code>reconcileViaSacct(jobIds)</code></td>
+<td>Reconcile Job states after SLURM outage (R13)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="environment-management-uenv-management">environment-management — uenv management<a class="headerlink" href="#environment-management-uenv-management" title="Permanent link">&para;</a></h3>
+<p>Mounts/unmounts uenvs (squashfs at prescribed paths). Conflict
+detection at filesystem path level (not Lmod soname, ADR-003).</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>checkUenvAvailability(name, version)</code></td>
+<td>Check if uenv exists in registry (INV-E3)</td>
+</tr>
+<tr>
+<td><code>loadUenv(request)</code></td>
+<td>Mount uenv, verify conflict-free (INV-E1, INV-E2)</td>
+</tr>
+<tr>
+<td><code>unloadUenv(environmentId)</code></td>
+<td>Unmount uenv</td>
+</tr>
+<tr>
+<td><code>verifyEnvironment(environmentId)</code></td>
+<td>Re-verify before invocation (X1 out-of-order)</td>
+</tr>
+<tr>
+<td><code>detectConflicts(uenvSpecs)</code></td>
+<td>Detect filesystem path conflicts</td>
+</tr>
+<tr>
+<td><code>getActiveEnvironment()</code></td>
+<td>Returns the currently active Environment or null</td>
+</tr>
+</tbody>
+</table>
+<h3 id="provenance-immutable-records">provenance — Immutable records<a class="headerlink" href="#provenance-immutable-records" title="Permanent link">&para;</a></h3>
+<p>Writes immutable ProvenanceRecords (JSON on HPC filesystem).
+Local quarantine (R11) — only the affected Dataset is isolated.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>writeProvenanceRecord(input)</code></td>
+<td>Write immutable record (INV-P1, INV-P2)</td>
+</tr>
+<tr>
+<td><code>queryProvenanceRecord(datasetId)</code></td>
+<td>Query record for a Dataset</td>
+</tr>
+<tr>
+<td><code>queryProvenanceForJob(jobId)</code></td>
+<td>Query record for a Job outcome</td>
+</tr>
+<tr>
+<td><code>queryLineage(datasetId)</code></td>
+<td>Trace full lineage chain</td>
+</tr>
+<tr>
+<td><code>verifyProvenance(datasetId)</code></td>
+<td>Verify record exists and is valid (INV-P3)</td>
+</tr>
+<tr>
+<td><code>reconstructProvenanceRecord(input)</code></td>
+<td>Best-effort reconstruction</td>
+</tr>
+<tr>
+<td><code>quarantineDataset(datasetId, reason)</code></td>
+<td>Local quarantine (R11)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="data-management-dataset-lifecycle">data-management — Dataset lifecycle<a class="headerlink" href="#data-management-dataset-lifecycle" title="Permanent link">&para;</a></h3>
+<p>Dataset registration, querying, Location validation, marking
+consumable (joint with provenance, INV-D3/INV-P3).</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>registerDataset(input)</code></td>
+<td>Register new Dataset (INV-D1, INV-D2, INV-D4)</td>
+</tr>
+<tr>
+<td><code>queryDataset(id)</code></td>
+<td>Query Dataset by identity</td>
+</tr>
+<tr>
+<td><code>listDatasets(filter?)</code></td>
+<td>List Datasets with optional filter</td>
+</tr>
+<tr>
+<td><code>validateLocation(location, mode)</code></td>
+<td>Validate Location resolves (read/write)</td>
+</tr>
+<tr>
+<td><code>markConsumable(datasetId)</code></td>
+<td>Mark as consumable (requires Provenance, INV-D3)</td>
+</tr>
+<tr>
+<td><code>quarantineDataset(datasetId, reason)</code></td>
+<td>Quarantine corrupted Dataset</td>
+</tr>
+</tbody>
+</table>
+<h3 id="tool-invocation-tool-execution-cesm">tool-invocation — Tool execution + CESM<a class="headerlink" href="#tool-invocation-tool-execution-cesm" title="Permanent link">&para;</a></h3>
+<p>Creates and executes ToolInvocations with the full lifecycle:
+validate → verify Environment → validate Locations → start →
+monitor → complete/fail. Strict exit codes by default (ADR-008).
+CESM is a Model Tool with a multi-step Case lifecycle (ADR-001).</p>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ToolCatalogService</code></td>
+<td><code>registerTool(tool)</code></td>
+<td>Register a Tool (CLI, Python, Model)</td>
+</tr>
+<tr>
+<td></td>
+<td><code>getTool(toolId)</code></td>
+<td>Query Tool by identity</td>
+</tr>
+<tr>
+<td></td>
+<td><code>getToolCatalog()</code></td>
+<td>List all registered Tools</td>
+</tr>
+<tr>
+<td><code>ToolInvocationService</code></td>
+<td><code>invokeTool(request)</code></td>
+<td>Execute a ToolInvocation (INV-T1–T5)</td>
+</tr>
+<tr>
+<td></td>
+<td><code>monitorInvocation(id)</code></td>
+<td>AsyncObservable of ToolInvocationEvents</td>
+</tr>
+<tr>
+<td><code>CaseService</code></td>
+<td><code>createCase(input)</code></td>
+<td>Create CESM Case (INV-T9, output fixed at creation)</td>
+</tr>
+<tr>
+<td></td>
+<td><code>configureCase(caseId, config)</code></td>
+<td>CESM case.setup (CREATED → CONFIGURED)</td>
+</tr>
+<tr>
+<td></td>
+<td><code>buildCase(caseId)</code></td>
+<td>CESM case.build (CONFIGURED → BUILT, FM-M1)</td>
+</tr>
+<tr>
+<td></td>
+<td><code>submitCase(caseId, resourceRequest)</code></td>
+<td>CESM case.submit (BUILT → SUBMITTED, INV-T6–T8)</td>
+</tr>
+<tr>
+<td></td>
+<td><code>monitorCase(caseId)</code></td>
+<td>AsyncObservable of CaseState changes</td>
+</tr>
+<tr>
+<td></td>
+<td><code>registerCaseOutput(caseId)</code></td>
+<td>Register output Datasets after COMPLETED</td>
+</tr>
+</tbody>
+</table>
+<h3 id="agent-interaction-llm-facing-surface">agent-interaction — LLM-facing surface<a class="headerlink" href="#agent-interaction-llm-facing-surface" title="Permanent link">&para;</a></h3>
+<p>Session (proactive Job reporting, R7), Experiment (first-class,
+ADR-002), Workflow (persisted, ADR-006), Action (LLM-facing,
+R3/ADR-010).</p>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SessionService</code></td>
+<td><code>startSession(user)</code></td>
+<td>Start Session, proactive Job report (R7)</td>
+</tr>
+<tr>
+<td></td>
+<td><code>endSession(sessionId)</code></td>
+<td>End Session, Jobs NOT cancelled (INV-W4)</td>
+</tr>
+<tr>
+<td></td>
+<td><code>reportJobStatus(sessionId)</code></td>
+<td>Report current Job states</td>
+</tr>
+<tr>
+<td><code>ExperimentService</code></td>
+<td><code>createExperiment(input)</code></td>
+<td>Create Experiment (R2)</td>
+</tr>
+<tr>
+<td></td>
+<td><code>addWorkflowToExperiment(expId, wfId)</code></td>
+<td>Add Workflow (throws WorkflowAlreadyAssigned)</td>
+</tr>
+<tr>
+<td></td>
+<td><code>addCaseToExperiment(expId, caseId)</code></td>
+<td>Add Case (eventual consistency, FINDING-02)</td>
+</tr>
+<tr>
+<td><code>WorkflowService</code></td>
+<td><code>createWorkflow(input)</code></td>
+<td>Create Workflow (validates Experiment)</td>
+</tr>
+<tr>
+<td></td>
+<td><code>addWorkflowStep(wfId, step)</code></td>
+<td>Add a step</td>
+</tr>
+<tr>
+<td></td>
+<td><code>startWorkflow(wfId)</code></td>
+<td>Start (INV-W1 inputs verified, INV-W2 failure halts)</td>
+</tr>
+<tr>
+<td></td>
+<td><code>resumeWorkflow(wfId)</code></td>
+<td>Resume from persisted state (R6)</td>
+</tr>
+<tr>
+<td><code>ActionService</code></td>
+<td><code>registerAction(action)</code></td>
+<td>Register Action (R3)</td>
+</tr>
+<tr>
+<td></td>
+<td><code>validateAction(request)</code></td>
+<td>Validate — refuse and ask if hallucinated (R12, ADR-010)</td>
+</tr>
+<tr>
+<td></td>
+<td><code>listActions()</code></td>
+<td>List all registered Actions</td>
+</tr>
+</tbody>
+</table>
+<h2 id="error-hierarchy">Error hierarchy<a class="headerlink" href="#error-hierarchy" title="Permanent link">&para;</a></h2>
+<pre class="codehilite"><code>CeraError (base)
+├── DshAdapterError
+│   ├── FrameworkBreakingChange (FM-X3)
+│   └── AdapterInternal
+├── ToolInvocationError
+│   ├── EnvironmentNotLoaded (INV-T1)
+│   ├── InputNotFound (FM-T5)
+│   ├── InputMissingProvenance (INV-D3, INV-W1)
+│   ├── InvalidParameters (FM-A2, FM-T4)
+│   ├── ToolNotFound (FM-A1, R12)
+│   ├── NonZeroExitCode (FM-T3, R4)
+│   ├── SignalTerminated (FM-T1, FM-T2, INV-T5)
+│   ├── CaseNotBuilt (INV-T6)
+│   ├── CaseAlreadyRunning (INV-T7)
+│   ├── RunLengthExceedsWallTime (INV-T8)
+│   └── OutputLocationNotSet (INV-T9)
+├── SchedulingError
+│   ├── RejectedByScheduler (FM-S1)
+│   ├── SchedulerUnavailable (FM-S2)
+│   └── StaleQueueData (FM-S3)
+├── EnvironmentError
+│   ├── UenvNotFound (FM-E1)
+│   ├── ConflictDetected (FM-E2)
+│   └── PartialLoad (FM-E3)
+├── DataError
+│   ├── LocationNotReadable (FM-D3)
+│   ├── LocationNotWritable (FM-D3)
+│   ├── DataQuotaExceeded (FM-D1)
+│   ├── ProvenanceMissing (INV-D3, FM-P3)
+│   └── DatasetCorrupted (FM-D5)
+├── ProvenanceError
+│   ├── WriteFailed (FM-P1)
+│   └── RecordCorrupted (FM-P2, R11)
+└── AgentError
+    ├── LlmHallucinatedTool (FM-A1, R12)
+    ├── LlmHallucinatedParameters (FM-A2, R12)
+    ├── ContextWindowExceeded (FM-A3)
+    ├── LlmUnavailable (FM-A4)
+    ├── NetworkLost (FM-X2)
+    ├── WorkflowAlreadyAssigned (R2)
+    ├── ExperimentNotFound (FINDING-02)
+    └── CaseAlreadyAssigned (R2)
+</code></pre>
+
+<p>FirecREST-specific errors (in <code>firecrest-adapter/types.ts</code>):</p>
+<pre class="codehilite"><code>FirecrestError (base)
+├── FirecrestTimeout (FM-F-1)
+├── FirecrestUnauthorized (FM-F-2)
+├── FirecrestRateLimited (FM-F-3)
+├── FirecrestUnavailable (FM-F-4)
+├── FirecrestSshError (FM-F-5)
+├── FirecrestSystemNotFound (FM-F-7)
+└── FirecrestFileTooLarge (FM-F-8)
+</code></pre>
+              
+            </div>
+          </div><footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="Footer Navigation">
+        <a href="../architecture/" class="btn btn-neutral float-left" title="Architecture"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../adrs/" class="btn btn-neutral float-right" title="ADRs">Next <span class="icon icon-circle-arrow-right"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+  </div>
+
+  Built with <a href="https://www.mkdocs.org/">MkDocs</a> using a <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+          
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" aria-label="Versions">
+  <span class="rst-current-version" data-toggle="rst-current-version">
+    
+        <span>
+          <a href="https://github.com/mbianco/cera" class="fa fa-code-fork" style="color: #fcfcfc"> mbianco/cera</a>
+        </span>
+    
+    
+      <span><a href="../architecture/" style="color: #fcfcfc">&laquo; Previous</a></span>
+    
+    
+      <span><a href="../adrs/" style="color: #fcfcfc">Next &raquo;</a></span>
+    
+  </span>
+</div>
+    <script src="../js/jquery-3.6.0.min.js"></script>
+    <script>var base_url = "..";</script>
+    <script src="../js/theme_extra.js"></script>
+    <script src="../js/theme.js"></script>
+    <script>
+        jQuery(function () {
+            SphinxRtdTheme.Navigation.enable(true);
+        });
+    </script>
+
+</body>
+</html>

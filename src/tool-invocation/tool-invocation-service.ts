@@ -711,6 +711,12 @@ export class ToolInvocationServiceImpl implements ToolInvocationService {
       // Step 3: Mark output Dataset as consumable (INV-D3 / INV-P3)
       await this.#dataManagement.markConsumable(outputDataset.id);
 
+      // Re-query the output Dataset — markConsumable() creates a
+      // new frozen Dataset with consumable=true and replaces the
+      // old one in the registry. We need the updated one.
+      const consumableDataset = await this.#dataManagement.queryDataset(outputDataset.id);
+      const finalOutputDataset = consumableDataset ?? outputDataset;
+
       // Update invocation with output dataset
       const finalInvocation: ToolInvocation = Object.freeze({
         ...completedInvocation,
@@ -730,7 +736,7 @@ export class ToolInvocationServiceImpl implements ToolInvocationService {
 
       return {
         invocation: finalInvocation,
-        outputDatasets: [outputDataset],
+        outputDatasets: [finalOutputDataset],
         provenanceRecord,
       };
     }

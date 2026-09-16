@@ -23,12 +23,12 @@ all: lint typecheck test-fast
 test: test-fast
 
 test-fast:
-	npx vitest run --exclude tests/integration/** --exclude tests/property/**
+	npx vitest run --exclude "tests/integration/**" --exclude "tests/property/**"
 
 # Tier 2: Tier 1 + integration tests + coverage
 test-slow: test-fast
-	npx vitest run --exclude tests/integration/** --coverage
-	npx vitest run tests/integration/** tests/property/**
+	npx vitest run --exclude "tests/integration/**" --coverage
+	npx vitest run tests/integration/ tests/property/
 
 # Tier 3: Tier 2 + full e2e (real HPC services)
 # In CI, this runs on a self-hosted runner with SLURM access.

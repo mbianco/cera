@@ -46,10 +46,10 @@ jobs:
         run: npx eslint src tests --max-warnings=0
 
       - name: All unit tests (Tier 1)
-        run: npx vitest run --exclude tests/integration/**
+        run: npx vitest run --exclude "tests/integration/**"
 
       - name: Integration tests (real modules + mock dsh-adapter)
-        run: npx vitest run tests/integration/** --reporter=verbose
+        run: npx vitest run tests/integration/ --reporter=verbose
 
       - name: Coverage report
         run: npx vitest run --coverage --reporter=verbose

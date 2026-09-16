@@ -45,8 +45,8 @@ jobs:
       - name: Lint
         run: npx eslint src tests --max-warnings=0
 
-      - name: Fast tests (unit + property)
-        run: npx vitest run --exclude tests/integration/** --exclude tests/property/** --reporter=verbose
+      - name: Fast tests (unit)
+        run: npx vitest run --exclude "tests/integration/**" --exclude "tests/property/**" --reporter=verbose
 
       - name: Property tests
-        run: npx vitest run tests/property/** --reporter=verbose
+        run: npx vitest run tests/property/ --reporter=verbose

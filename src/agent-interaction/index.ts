@@ -103,3 +103,6 @@ export type { WorkflowExecutorProps, MissingInput } from './workflow-executor';
 // ActionService
 export { ActionServiceImpl } from './action-service';
 export type { ActionServiceImplProps } from './action-service';
+
+// WorkflowStore (ADR-006 — filesystem-backed persistence)
+export { WorkflowStore } from './workflow-store';

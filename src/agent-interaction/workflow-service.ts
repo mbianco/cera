@@ -47,6 +47,7 @@
 import type { SchedulingService } from '../scheduling/types';
 import type { DataManagementService } from '../data-management/types';
 import type { ProvenanceService } from '../provenance/types';
+import type { FilesystemGateway } from '../dsh-adapter/types';
 import type { ToolInvocationService, ToolCatalogService, CaseService } from '../tool-invocation/types';
 import type {
   DatasetId,
@@ -67,6 +68,7 @@ import type {
 import { DEFAULT_WORKFLOW_SERVICE_CONFIG, createWorkflowId, createWorkflowStepId } from './types';
 import { WorkflowExecutor } from './workflow-executor';
 import type { WorkflowExecutorProps } from './workflow-executor';
+import { WorkflowStore } from './workflow-store';
 
 // ============================================================================
 // WorkflowServiceImplProps
@@ -90,6 +92,11 @@ export interface WorkflowServiceImplProps {
   readonly catalog: ToolCatalogService;
   readonly scheduling: SchedulingService;
   readonly experimentService?: import('./experiment-service').ExperimentServiceImpl;
+  /**
+   * Filesystem gateway for Workflow persistence (ADR-006).
+   * If omitted, persistence is disabled (in-memory only).
+   */
+  readonly filesystem?: FilesystemGateway;
   readonly config?: Partial<WorkflowServiceConfig>;
   readonly onEvent?: (event: WorkflowEvent) => void;
 }
@@ -140,6 +147,7 @@ export class WorkflowServiceImpl {
   #onEvent?: (event: WorkflowEvent) => void;
   #workflows: Map<string, InternalWorkflowRecord> = new Map();
   #executor: WorkflowExecutor;
+  #store: WorkflowStore | null = null;
 
   constructor(props: WorkflowServiceImplProps) {
     this.#dataManagement = props.dataManagement;
@@ -154,6 +162,15 @@ export class WorkflowServiceImpl {
       ...props.config,
     };
     this.#onEvent = props.onEvent;
+
+    // ADR-006: Filesystem-backed Workflow store. If filesystem is
+    // not provided, persistence is disabled (in-memory only).
+    if (props.filesystem !== undefined && this.#config.storePath.length > 0) {
+      this.#store = new WorkflowStore({
+        filesystem: props.filesystem,
+        storePath: this.#config.storePath,
+      });
+    }
 
     const executorProps: WorkflowExecutorProps = {
       dataManagement: this.#dataManagement,
@@ -648,7 +665,8 @@ export class WorkflowServiceImpl {
 
   /**
    * Sets the Workflow state and emits a WorkflowStateChanged
-   * event.
+   * event. Also persists the Workflow to the filesystem store
+   * (ADR-006).
    */
   #setWorkflowState(
     record: InternalWorkflowRecord,
@@ -674,6 +692,9 @@ export class WorkflowServiceImpl {
       newState,
       timestamp: new Date(),
     });
+
+    // ADR-006: Persist to filesystem (best-effort, non-blocking)
+    void this.#persist(record);
   }
 
   /**
@@ -681,5 +702,25 @@ export class WorkflowServiceImpl {
    */
   #emitEvent(event: WorkflowEvent): void {
     this.#onEvent?.(event);
+  }
+
+  /**
+   * Persists a Workflow to the filesystem store (ADR-006).
+   *
+   * Best-effort: if the write fails, the error is logged but not
+   * thrown. The in-memory state is authoritative during the
+   * Session; the filesystem store is for cross-Session recovery.
+   */
+  async #persist(record: InternalWorkflowRecord): Promise<void> {
+    if (this.#store === null) return;
+    try {
+      await this.#store.save(
+        record.workflow,
+        Array.from(record.steps.values()),
+      );
+    } catch {
+      // Best-effort persistence — log but don't throw.
+      // The in-memory state is authoritative during the Session.
+    }
   }
 }

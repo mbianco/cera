@@ -168,6 +168,13 @@ export interface WorkflowStepInput {
 export interface WorkflowServiceConfig {
   readonly pollIntervalMs: number;
   readonly outputBasePath: string;
+  /**
+   * Filesystem path for Workflow persistence (ADR-006).
+   * Each Workflow is stored as `<storePath>/<workflow-id>.json`.
+   * If empty, persistence is disabled (in-memory only, for testing).
+   * Default: '/scratch/snx3000/cera_user/workflows'.
+   */
+  readonly storePath: string;
 }
 
 /**
@@ -176,6 +183,7 @@ export interface WorkflowServiceConfig {
 export const DEFAULT_WORKFLOW_SERVICE_CONFIG: WorkflowServiceConfig = {
   pollIntervalMs: 30_000,
   outputBasePath: '/scratch/snx3000/cera_user/output',
+  storePath: '/scratch/snx3000/cera_user/workflows',
 };
 
 // ============================================================================

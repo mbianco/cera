@@ -1,0 +1,52 @@
+# cera — Tier 1: Fast tests, lint, typecheck
+#
+# Runs on every push and pull request. Catches regressions between
+# edits. Fast unit tests + property tests + ESLint + tsc.
+#
+# Spec: ~/.config/opencode/guidelines/ci.md (Tier 1)
+
+name: Tier 1 — Fast
+
+on:
+  push:
+    branches: [main, 'feature/**', 'fix/**']
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs for the same branch/PR
+concurrency:
+  group: tier1-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint-typecheck-test:
+    name: Lint + Typecheck + Fast Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint src tests --max-warnings=0
+
+      - name: Fast tests (unit + property)
+        run: npx vitest run --exclude tests/integration/** --exclude tests/property/** --reporter=verbose
+
+      - name: Property tests
+        run: npx vitest run tests/property/** --reporter=verbose

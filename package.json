@@ -8,7 +8,10 @@
   "scripts": {
     "build": "tsdown",
     "test": "vitest run",
-    "test:fast": "vitest run --reporter=verbose",
+    "test:fast": "vitest run --exclude tests/integration/** --exclude tests/property/**",
+    "test:slow": "vitest run --exclude tests/integration/**",
+    "test:full": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "lint": "eslint src tests --max-warnings=0",
     "typecheck": "tsc --noEmit"
   },

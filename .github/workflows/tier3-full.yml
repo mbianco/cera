@@ -1,0 +1,82 @@
+# cera — Tier 3: Full e2e (nightly + pre-release)
+#
+# Runs the full test suite including end-to-end tests against real
+# HPC services (SLURM, uenv, filesystem). Requires a self-hosted
+# runner on the Alps login node.
+#
+# In the absence of a self-hosted HPC runner, this workflow runs
+# the same tests as Tier 2 (all mocked). When a self-hosted runner
+# is available, uncomment the runs-on line and add the HPC test
+# suite.
+#
+# Spec: ~/.config/opencode/guidelines/ci.md (Tier 3)
+# Spec: specs/architecture/build-phases.md (Tier 3 column)
+
+name: Tier 3 — Full
+
+on:
+  schedule:
+    # Nightly at 03:00 UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    # Manual trigger for pre-release validation
+
+permissions:
+  contents: read
+
+jobs:
+  full-e2e:
+    name: Full End-to-End
+    # When a self-hosted Alps runner is available:
+    # runs-on: [self-hosted, alps, login]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint src tests --max-warnings=0
+
+      - name: Full test suite (all tiers)
+        run: npx vitest run --coverage --reporter=verbose
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-full
+          path: coverage/
+          retention-days: 90
+
+  # When a self-hosted Alps runner is available, this job runs
+  # real HPC e2e tests (sbach, squeue, uenv mount, cdo, etc.).
+  # Uncomment and configure the runner label to enable.
+  #
+  # hpc-e2e:
+  #   name: HPC End-to-End (Alps)
+  #   runs-on: [self-hosted, alps, login]
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Install dependencies
+  #       run: npm ci
+  #
+  #     - name: Real SLURM + uenv + CDO tests
+  #       run: npx vitest run tests/e2e/** --reporter=verbose
+  #       env:
+  #         SLURM_USERNAME: ${{ secrets.SLURM_USERNAME }}
+  #         UENV_REGISTRY: /user-environment/env/

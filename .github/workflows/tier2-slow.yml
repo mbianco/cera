@@ -1,0 +1,63 @@
+# cera — Tier 2: Slow tests, integration, coverage
+#
+# Runs on pull requests (before merge). Includes Tier 1 + integration
+# tests + coverage report. Does NOT require real HPC services — all
+# modules are real, only dsh-adapter is mocked.
+#
+# Spec: ~/.config/opencode/guidelines/ci.md (Tier 2)
+
+name: Tier 2 — Slow
+
+on:
+  pull_request:
+    branches: [main]
+
+# Cancel in-progress runs for the same PR
+concurrency:
+  group: tier2-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  integration-coverage:
+    name: Integration Tests + Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint src tests --max-warnings=0
+
+      - name: All unit tests (Tier 1)
+        run: npx vitest run --exclude tests/integration/**
+
+      - name: Integration tests (real modules + mock dsh-adapter)
+        run: npx vitest run tests/integration/** --reporter=verbose
+
+      - name: Coverage report
+        run: npx vitest run --coverage --reporter=verbose
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30

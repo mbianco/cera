@@ -2,16 +2,17 @@
  * cera — AI agent for climate scientists on the Alps supercomputer.
  *
  * Built on DeepSeek Harness (dsh), a TypeScript/Node agent framework.
- * Phase 1 (dsh-adapter), Phase 2 (scheduling, environment-management,
- * provenance), Phase 3 (data-management), and Phase 4
- * (tool-invocation, CaseService) are implemented.
+ * All 5 implementation phases are complete, plus the FirecREST
+ * backend (ADR-011) for running cera on a laptop and accessing
+ * Alps HPC resources via REST API.
  */
 
 // Shared types (value objects, entities, events, errors)
 export * from './types';
 
-// dsh-adapter module (Phase 1)
+// Backends — dsh-adapter (local, Phase 1) and firecrest-adapter (remote, ADR-011)
 export * from './dsh-adapter';
+export * from './firecrest-adapter';
 
 // Phase 2 modules
 export * from './scheduling';

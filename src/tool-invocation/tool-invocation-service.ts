@@ -546,8 +546,9 @@ export class ToolInvocationServiceImpl implements ToolInvocationService {
     // ProvenanceRecord.
     // ================================================================
     let activeEnv: Environment | null = null;
-    let envIdForProvenance: EnvironmentId = 'firecrest-backend' as EnvironmentId;
-    let envDescriptionForProvenance = 'uenv loaded in Job script (F-INV-5)';
+    void activeEnv;
+    let envIdForProvenance: EnvironmentId | undefined;
+    let envDescriptionForProvenance: string | undefined;
 
     if (this.#environment !== null) {
       activeEnv = this.#environment.getActiveEnvironment();

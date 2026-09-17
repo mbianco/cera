@@ -204,7 +204,8 @@ export class FirecrestClientImpl implements FirecrestClient {
     let retryCount = 0;
     let refreshedToken = false;
     let lastStatusCode = 0;
-    let lastBodyText = '';
+    let lastBodyText = "";
+    void lastBodyText;
     let lastSshError = false;
     let lastRetryAfterMs: number | null = null;
 
@@ -305,7 +306,7 @@ export class FirecrestClientImpl implements FirecrestClient {
         if (retryAfter !== null) {
           lastRetryAfterMs = this.#parseRetryAfter(retryAfter);
         }
-        lastBodyText = await response.text().catch(() => '');
+        void await response.text().catch(() => '');
         lastStatusCode = 429;
         if (retryCount >= this.#maxRetries) {
           throw new FirecrestRateLimited({

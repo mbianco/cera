@@ -1083,6 +1083,7 @@ export class CaseServiceImpl implements CaseService {
     } catch (error) {
       throw new Error(
         `Output tree at '${existingCase.outputTreeLocation.path}' is inaccessible: ${error instanceof Error ? error.message : String(error)}`,
+        { cause: error },
       );
     }
 

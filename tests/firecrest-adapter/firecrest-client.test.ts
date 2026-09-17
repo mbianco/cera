@@ -106,7 +106,7 @@ describe('FirecrestClientImpl', () => {
   describe('JWT in Authorization header (F-INV-2)', () => {
     it('GET sends Authorization: Bearer <token>', async () => {
       const fetchMock = vi.fn().mockResolvedValue(mockJsonResponse({ ok: true }));
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -128,7 +128,7 @@ describe('FirecrestClientImpl', () => {
 
     it('POST sends Authorization header and JSON body', async () => {
       const fetchMock = vi.fn().mockResolvedValue(mockJsonResponse({ jobId: 123 }));
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -150,7 +150,7 @@ describe('FirecrestClientImpl', () => {
 
     it('PUT sends Authorization header and JSON body', async () => {
       const fetchMock = vi.fn().mockResolvedValue(mockJsonResponse({ ok: true }));
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -169,7 +169,7 @@ describe('FirecrestClientImpl', () => {
 
     it('DELETE sends Authorization header', async () => {
       const fetchMock = vi.fn().mockResolvedValue(mockJsonResponse({ ok: true }));
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -189,7 +189,7 @@ describe('FirecrestClientImpl', () => {
 
     it('returns FirecrestResponse with statusCode and body', async () => {
       const fetchMock = vi.fn().mockResolvedValue(mockJsonResponse({ state: 'RUNNING' }));
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -215,7 +215,7 @@ describe('FirecrestClientImpl', () => {
         mockJsonResponse({ error: 'invalid token' }, 401),
         mockJsonResponse({ ok: true }, 200),
       ]);
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const tokenProvider = createMockTokenProvider({ token: 'old-token' });
       const client = new FirecrestClientImpl({
@@ -241,7 +241,7 @@ describe('FirecrestClientImpl', () => {
       const fetchMock = vi.fn().mockResolvedValue(
         mockJsonResponse({ error: 'expired' }, 401),
       );
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const tokenProvider = createMockTokenProvider({ token: 'old-token' });
       tokenProvider.refreshTokenMock.mockRejectedValue(new Error('refresh failed'));
@@ -261,7 +261,7 @@ describe('FirecrestClientImpl', () => {
       const fetchMock = vi.fn().mockResolvedValue(
         mockJsonResponse({ error: 'still invalid' }, 401),
       );
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const tokenProvider = createMockTokenProvider({ token: 'old-token' });
       const client = new FirecrestClientImpl({
@@ -288,7 +288,7 @@ describe('FirecrestClientImpl', () => {
         mockJsonResponse({ error: 'rate limited' }, 429, { 'retry-after': '1' }),
         mockJsonResponse({ ok: true }, 200),
       ]);
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -313,7 +313,7 @@ describe('FirecrestClientImpl', () => {
         mockJsonResponse({ error: 'rate limited' }, 429),
         mockJsonResponse({ ok: true }, 200),
       ]);
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -334,7 +334,7 @@ describe('FirecrestClientImpl', () => {
       const fetchMock = vi.fn().mockResolvedValue(
         mockJsonResponse({ error: 'rate limited' }, 429),
       );
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -355,7 +355,7 @@ describe('FirecrestClientImpl', () => {
         mockJsonResponse({ error: 'rate limited' }, 429, { 'retry-after': '2' }),
         mockJsonResponse({ ok: true }, 200),
       ]);
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -384,7 +384,7 @@ describe('FirecrestClientImpl', () => {
         mockJsonResponse({ error: 'unavailable' }, 503),
         mockJsonResponse({ ok: true }, 200),
       ]);
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -404,7 +404,7 @@ describe('FirecrestClientImpl', () => {
       const fetchMock = vi.fn().mockResolvedValue(
         mockJsonResponse({ error: 'unavailable' }, 503),
       );
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -429,7 +429,7 @@ describe('FirecrestClientImpl', () => {
       const fetchMock = vi.fn().mockResolvedValue(
         mockTextResponse('ssh: connection to host failed', 500),
       );
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -447,7 +447,7 @@ describe('FirecrestClientImpl', () => {
       const fetchMock = vi.fn().mockResolvedValue(
         mockTextResponse('internal server error', 500),
       );
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -465,7 +465,7 @@ describe('FirecrestClientImpl', () => {
       const fetchMock = vi.fn().mockResolvedValue(
         mockTextResponse('ssh: connection refused', 500),
       );
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -491,7 +491,7 @@ describe('FirecrestClientImpl', () => {
       const fetchMock = vi.fn().mockResolvedValue(
         mockTextResponse('System "unknown_system" not found in FirecREST', 404),
       );
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -508,7 +508,7 @@ describe('FirecrestClientImpl', () => {
       const fetchMock = vi.fn().mockResolvedValue(
         mockJsonResponse({ error: 'Job 9999999 not found' }, 404),
       );
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -527,7 +527,7 @@ describe('FirecrestClientImpl', () => {
       const fetchMock = vi.fn().mockResolvedValue(
         mockJsonResponse({ error: 'Job not found' }, 404),
       );
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -550,7 +550,7 @@ describe('FirecrestClientImpl', () => {
     it('throws FirecrestTimeout when request times out after all retries', async () => {
       const abortError = new DOMException('The operation was aborted', 'AbortError');
       const fetchMock = vi.fn().mockRejectedValue(abortError);
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -608,7 +608,7 @@ describe('FirecrestClientImpl', () => {
       const fetchMock = vi.fn().mockResolvedValue(
         mockJsonResponse({ error: 'unavailable' }, 503),
       );
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -628,7 +628,7 @@ describe('FirecrestClientImpl', () => {
       const fetchMock = vi.fn().mockResolvedValue(
         mockJsonResponse({ error: 'unavailable' }, 503),
       );
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -654,7 +654,7 @@ describe('FirecrestClientImpl', () => {
       const fetchMock = vi.fn().mockResolvedValue(
         new Response(fileContent, { status: 200 }),
       );
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -673,7 +673,7 @@ describe('FirecrestClientImpl', () => {
       const fetchMock = vi.fn().mockResolvedValue(
         new Response(Buffer.from('data'), { status: 200 }),
       );
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -700,7 +700,7 @@ describe('FirecrestClientImpl', () => {
       const fetchMock = vi.fn().mockResolvedValue(
         mockJsonResponse({ ok: true }, 200),
       );
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',
@@ -724,7 +724,7 @@ describe('FirecrestClientImpl', () => {
       const fetchMock = vi.fn().mockResolvedValue(
         mockJsonResponse({ ok: true }, 200),
       );
-      globalThis.fetch = fetchMock;
+      globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
 
       const client = new FirecrestClientImpl({
         firecrestUrl: 'https://firecrest.cscs.ch',

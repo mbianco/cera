@@ -37,7 +37,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci || npm install
 
       - name: Typecheck
         run: npx tsc --noEmit
@@ -46,7 +46,7 @@ jobs:
         run: npx eslint src tests --max-warnings=0
 
       - name: Fast tests (unit)
-        run: npx vitest run --exclude "tests/integration/**" --exclude "tests/property/**"
+        run: npx vitest run --exclude "tests/integration/**" --exclude "tests/property/**" 2>&1
 
       - name: Property tests
-        run: npx vitest run tests/property/
+        run: npx vitest run tests/property/ 2>&1

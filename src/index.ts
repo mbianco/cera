@@ -27,3 +27,14 @@ export * from './tool-invocation';
 
 // Phase 5 modules
 export * from './agent-interaction';
+
+// Startup wiring (ADR-012, R14)
+export type {
+  BackendType,
+  BackendSelection,
+  DshConfig,
+  JobScriptConfig,
+  CeraSystemConfig,
+  CeraSystem,
+} from './startup';
+export { createCeraSystem } from './startup';

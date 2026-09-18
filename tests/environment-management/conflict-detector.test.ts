@@ -38,7 +38,7 @@ function createDetector(
 // No conflicts (complementary uenvs)
 // ============================================================================
 
-describe('ConflictDetector — no conflicts', () => {
+describe('@dev-only ConflictDetector — no conflicts', () => {
   it('returns empty array for complementary uenvs', async () => {
     const dirs = new Map<string, readonly string[]>([
       ['/uenv/cdo/2.0.5/usr/bin', ['cdo', 'ncdump']],
@@ -89,7 +89,7 @@ describe('ConflictDetector — no conflicts', () => {
 // Binary path conflicts (INV-E2)
 // ============================================================================
 
-describe('ConflictDetector — binary path conflicts', () => {
+describe('@dev-only ConflictDetector — binary path conflicts', () => {
   it('detects same binary at different mount paths', async () => {
     const dirs = new Map<string, readonly string[]>([
       ['/uenv/cdo-gcc/2.0.5/usr/bin', ['cdo', 'ncdump']],
@@ -138,7 +138,7 @@ describe('ConflictDetector — binary path conflicts', () => {
 // Library path conflicts (INV-E2)
 // ============================================================================
 
-describe('ConflictDetector — library path conflicts', () => {
+describe('@dev-only ConflictDetector — library path conflicts', () => {
   it('detects same library at different mount paths', async () => {
     const dirs = new Map<string, readonly string[]>([
       ['/uenv/netcdf-env/4.9.2/usr/lib', ['libnetcdf.so.4']],
@@ -218,7 +218,7 @@ describe('ConflictDetector — library path conflicts', () => {
 // Compiler conflicts (special case)
 // ============================================================================
 
-describe('ConflictDetector — compiler conflicts', () => {
+describe('@dev-only ConflictDetector — compiler conflicts', () => {
   it('detects compiler conflict (gcc in both uenvs)', async () => {
     const dirs = new Map<string, readonly string[]>([
       ['/uenv/cdo-gcc/2.0.5/usr/bin', ['cdo', 'gcc']],
@@ -279,7 +279,7 @@ describe('ConflictDetector — compiler conflicts', () => {
 // Missing directories
 // ============================================================================
 
-describe('ConflictDetector — missing directories', () => {
+describe('@dev-only ConflictDetector — missing directories', () => {
   it('does not conflict when one uenv has no bin directory', async () => {
     const dirs = new Map<string, readonly string[]>([
       ['/uenv/a/1.0/usr/bin', ['cdo']],
@@ -317,7 +317,7 @@ describe('ConflictDetector — missing directories', () => {
 // Same mount path (not a conflict)
 // ============================================================================
 
-describe('ConflictDetector — same mount path', () => {
+describe('@dev-only ConflictDetector — same mount path', () => {
   it('does not conflict when both uenvs have the same mount path', async () => {
     const dirs = new Map<string, readonly string[]>([
       ['/uenv/shared/1.0/usr/bin', ['cdo']],
@@ -338,7 +338,7 @@ describe('ConflictDetector — same mount path', () => {
 // Three-way comparison
 // ============================================================================
 
-describe('ConflictDetector — three-way comparison', () => {
+describe('@dev-only ConflictDetector — three-way comparison', () => {
   it('detects conflicts between any pair in a three-uenv set', async () => {
     const dirs = new Map<string, readonly string[]>([
       ['/uenv/a/1.0/usr/bin', ['tool1', 'shared_tool']],

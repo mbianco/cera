@@ -87,6 +87,8 @@ import { DEFAULT_TOOL_INVOCATION_CONFIG } from './types';
 import { CLIExecutorImpl } from './cli-executor';
 import { PythonExecutorImpl } from './python-executor';
 import { createAsyncObservable } from './async-observable';
+import type { JobScriptConfig } from '../startup';
+import { UENV_SPECS_KEY } from '../firecrest-adapter/shell-executor';
 
 // ============================================================================
 // Internal invocation tracking
@@ -364,6 +366,23 @@ export interface ToolInvocationServiceImplProps {
   readonly sandboxRunner?: SandboxRunner;
   readonly config?: Partial<ToolInvocationConfig>;
   readonly onEvent?: (event: ToolInvocationEvent) => void;
+  /**
+   * Job script configuration for the FirecREST backend (F-INV-5,
+   * FP-INV-5). When provided (production), the service always takes
+   * the parallel path (F-INV-6), uses `defaultResourceRequest` when
+   * `request.resourceRequest` is absent (FP-INV-5), and passes
+   * `uenvSpecs` through to the scheduling/ShellExecutor for
+   * `uenv start <spec> --` prefix construction.
+   *
+   * When absent (dev mode), the service dispatches on
+   * `request.executionModel` and uses `EnvironmentService` for
+   * environment verification (INV-T1 original).
+   *
+   * Spec: ADR-012; resolutions-r14.md R14.3, R14.4;
+   * invariants-firecrest-primary.md F-INV-5, F-INV-6, FP-INV-3,
+   * FP-INV-5.
+   */
+  readonly jobScriptConfig?: JobScriptConfig;
 }
 
 /**
@@ -392,6 +411,7 @@ export class ToolInvocationServiceImpl implements ToolInvocationService {
   #pythonExecutor: PythonExecutorImpl;
   #config: ToolInvocationConfig;
   #onEvent?: (event: ToolInvocationEvent) => void;
+  #jobScriptConfig: JobScriptConfig | null;
   #invocations: Map<string, InternalInvocationRecord> = new Map();
 
   constructor(props: ToolInvocationServiceImplProps) {
@@ -412,6 +432,7 @@ export class ToolInvocationServiceImpl implements ToolInvocationService {
       ...props.config,
     };
     this.#onEvent = props.onEvent;
+    this.#jobScriptConfig = props.jobScriptConfig ?? null;
   }
 
   // ========================================================================
@@ -465,16 +486,38 @@ export class ToolInvocationServiceImpl implements ToolInvocationService {
 
     // ================================================================
     // Step 2: Validate parameters and execution model
+    //
+    // FCREST-01 / R14: When EnvironmentService is absent (FirecREST
+    // backend, production), ALL ToolInvocations are parallel
+    // (F-INV-6). The executionModel field is ignored — a
+    // synchronous Tool can be submitted as a Job (the Job runs the
+    // synchronous command and exits). So we skip the
+    // validateExecutionModel check and relax the resourceRequest
+    // validation to use the default from jobScriptConfig (FP-INV-5).
     // ================================================================
-    validateParameters(tool, request.parameters);
-    validateExecutionModel(tool, request);
+    const isProduction = this.#environment === null;
+    const effectiveResourceRequest =
+      request.resourceRequest ??
+      this.#jobScriptConfig?.defaultResourceRequest;
 
-    // Validate resourceRequest is present for parallel execution
-    if (request.executionModel === 'parallel' && !request.resourceRequest) {
+    validateParameters(tool, request.parameters);
+
+    if (!isProduction) {
+      // Dev mode: validate execution model compatibility
+      validateExecutionModel(tool, request);
+    }
+
+    // Validate resourceRequest: required for parallel execution in
+    // dev mode, and for ALL execution in production (F-INV-6).
+    // FP-INV-5: the default from jobScriptConfig may supply it.
+    if (
+      (request.executionModel === 'parallel' || isProduction) &&
+      !effectiveResourceRequest
+    ) {
       throw new InvalidParameters({
         toolId: tool.id,
         invalidParameters: ['resourceRequest'],
-        schema: { type: 'object', description: 'resourceRequest is required for parallel execution' },
+        schema: { type: 'object', description: 'resourceRequest is required for parallel execution (or when running on the FirecREST backend, F-INV-6)' },
       });
     }
 
@@ -655,13 +698,19 @@ export class ToolInvocationServiceImpl implements ToolInvocationService {
 
     // ================================================================
     // Step 8: Execute
+    //
+    // F-INV-6 / R14: When EnvironmentService is absent (production),
+    // ALL ToolInvocations take the parallel path, regardless of
+    // request.executionModel. In dev mode, dispatch on
+    // request.executionModel as before.
     // ================================================================
     let exitOutcome: ExitOutcome;
     let stderr = '';
     let jobId: JobId | undefined;
     let jobState: JobState | undefined;
 
-    if (request.executionModel === 'parallel') {
+    if (isProduction) {
+      // Production: ALL ToolInvocations are parallel (F-INV-6)
       const result = await this.#executeParallel(
         tool,
         request,
@@ -671,13 +720,25 @@ export class ToolInvocationServiceImpl implements ToolInvocationService {
       jobId = result.jobId;
       jobState = result.jobState;
     } else {
-      const result = await this.#executeSynchronous(
-        tool,
-        request,
-        inputDatasets,
-      );
-      exitOutcome = result.exitOutcome;
-      stderr = result.stderr;
+      // Dev: dispatch on executionModel
+      if (request.executionModel === 'parallel') {
+        const result = await this.#executeParallel(
+          tool,
+          request,
+          inputDatasets,
+        );
+        exitOutcome = result.exitOutcome;
+        jobId = result.jobId;
+        jobState = result.jobState;
+      } else {
+        const result = await this.#executeSynchronous(
+          tool,
+          request,
+          inputDatasets,
+        );
+        exitOutcome = result.exitOutcome;
+        stderr = result.stderr;
+      }
     }
 
     // ================================================================
@@ -961,7 +1022,11 @@ export class ToolInvocationServiceImpl implements ToolInvocationService {
     }
 
     // Submit the Job
-    const resourceRequest = request.resourceRequest;
+    // FP-INV-5: Use the default ResourceRequest from jobScriptConfig
+    // when request.resourceRequest is absent (production).
+    const resourceRequest =
+      request.resourceRequest ??
+      this.#jobScriptConfig?.defaultResourceRequest;
     if (!resourceRequest) {
       // This should never happen — invokeTool() validates this
       // earlier. The guard satisfies the type checker.
@@ -971,10 +1036,25 @@ export class ToolInvocationServiceImpl implements ToolInvocationService {
         schema: { type: 'object', description: 'resourceRequest is required for parallel execution' },
       });
     }
+
+    // F-INV-5: Pass uenv specs via the UENV_SPECS_KEY environment
+    // variable. The FirecrestShellExecutor / FirecrestSubprocessRunner
+    // extract this key and use it to build the `uenv start <spec> --`
+    // prefix in the Job script.
+    const uenvSpecs = this.#jobScriptConfig?.uenvSpecs;
+    const environmentVars: Record<string, string> = {};
+    if (uenvSpecs !== undefined && uenvSpecs.length > 0) {
+      environmentVars[UENV_SPECS_KEY] = uenvSpecs.join(',');
+    }
+
     const job = await this.#scheduling.submitJob({
       resourceRequest,
       command,
       workingDirectory: undefined,
+      environmentVars:
+        Object.keys(environmentVars).length > 0
+          ? environmentVars
+          : undefined,
     });
 
     // Poll until terminal state (INV-S1)

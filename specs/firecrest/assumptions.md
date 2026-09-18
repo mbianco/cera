@@ -60,6 +60,25 @@ documentation: 900ms at high throughput).
 within a Session. Large files are never downloaded to the laptop —
 all processing happens on the HPC via Jobs.
 
+### F-A-4: Local backend is for development and testing only
+**Status:** ACCEPTED (R14.5, ADR-012)
+**Risk:** If users or developers deploy the local backend (`--backend
+dev`, formerly `--backend local`) in production, they lose the
+benefits of the FirecREST architecture (no SSH, no VPN, laptop-based
+LLM) and encounter failure modes that are only classified for dev
+mode (FM-S2, FM-E1–E3, FM-X2). User-facing documentation that
+mentions the local backend may confuse users into thinking it is a
+supported production option.
+**Mitigation:** The `--backend` flag defaults to `firecrest`
+(FP-INV-1). The `--backend dev` flag is documented only in developer
+documentation, not in user-facing documentation. User-facing
+documentation describes only the FirecREST backend. The local
+backend's failure modes (FM-S2, FM-E1–E3, FM-X2) are classified as
+DEV-ONLY in `failure-modes-firecrest-primary.md`. The local backend's
+invariants (INV-E1–E3 in their original form) are classified as
+RE-EVALUATED or REMOVED from the production path in
+`invariants-firecrest-primary.md`.
+
 ## UNKNOWN
 
 ### F-U-1: Transfer method availability

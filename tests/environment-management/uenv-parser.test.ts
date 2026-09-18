@@ -26,7 +26,7 @@ import {
 // parseUenvNameVersion
 // ============================================================================
 
-describe('parseUenvNameVersion', () => {
+describe('@dev-only parseUenvNameVersion', () => {
   it('parses a name/version string', () => {
     const result = parseUenvNameVersion('cdo/2.0.5');
     expect(result.name).toBe('cdo');
@@ -66,7 +66,7 @@ describe('parseUenvNameVersion', () => {
 // parseUenvStatus (INV-E3)
 // ============================================================================
 
-describe('parseUenvStatus', () => {
+describe('@dev-only parseUenvStatus', () => {
   it('returns true when exit code is 0 (uenv available)', () => {
     const exitOutcome = createMockExitOutcome({ kind: 'exit_code', code: 0 });
     expect(parseUenvStatus(exitOutcome)).toBe(true);
@@ -91,7 +91,7 @@ describe('parseUenvStatus', () => {
 // parseUenvList
 // ============================================================================
 
-describe('parseUenvList', () => {
+describe('@dev-only parseUenvList', () => {
   it('parses multiple mounted uenvs', () => {
     const entries = parseUenvList(UENV_LIST_OUTPUT);
 
@@ -145,7 +145,7 @@ describe('parseUenvList', () => {
 // parseUenvMountResult
 // ============================================================================
 
-describe('parseUenvMountResult', () => {
+describe('@dev-only parseUenvMountResult', () => {
   it('returns success when exit code is 0', () => {
     const result = parseUenvMountResult(
       createMockExitOutcome({ kind: 'exit_code', code: 0 }),
@@ -175,7 +175,7 @@ describe('parseUenvMountResult', () => {
 // parseUenvUmountResult
 // ============================================================================
 
-describe('parseUenvUmountResult', () => {
+describe('@dev-only parseUenvUmountResult', () => {
   it('returns true when exit code is 0', () => {
     expect(
       parseUenvUmountResult(

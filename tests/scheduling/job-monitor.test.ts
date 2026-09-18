@@ -83,7 +83,7 @@ function isTerminal(state: JobState): boolean {
 // Tests
 // ============================================================================
 
-describe('JobMonitorImpl', () => {
+describe('@dev-only JobMonitorImpl', () => {
   it('emits state change events when the Job transitions', async () => {
     const service = createMockSchedulingService(['PENDING', 'RUNNING', 'COMPLETED']);
     const monitor = new JobMonitorImpl(service, {

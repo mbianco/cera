@@ -30,7 +30,7 @@ import {
   SACCT_MULTI_OUTPUT,
 } from './helpers';
 
-describe('SLURM parser', () => {
+describe('@dev-only SLURM parser', () => {
   // ========================================================================
   // sbatch output parsing
   // ========================================================================

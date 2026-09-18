@@ -144,7 +144,7 @@ function createService(
   });
 }
 
-describe('SchedulingServiceImpl', () => {
+describe('@dev-only SchedulingServiceImpl', () => {
   // ========================================================================
   // submitJob (INV-S2, INV-S3; FM-S1, FM-S2)
   // ========================================================================

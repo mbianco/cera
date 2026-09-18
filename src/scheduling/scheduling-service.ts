@@ -1,4 +1,16 @@
 /**
+ * DEV-ONLY (R14, ADR-012).
+ *
+ * In production, SchedulingService is implemented by
+ * FirecRESTSchedulingService (via FirecREST compute endpoints).
+ * This SLURM CLI implementation (sbatch, squeue, scancel, sacct
+ * via SubprocessRunner) is only used in dev mode (--backend dev).
+ *
+ * Spec: resolutions-r14.md R14.6; ADR-012;
+ * invariants-firecrest-primary.md FP-INV-4.
+ */
+
+/**
  * SchedulingService implementation (C4 — SLURM).
  *
  * Submits Jobs via sbatch, queries state via squeue (active) and

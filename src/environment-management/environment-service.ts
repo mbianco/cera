@@ -1,4 +1,18 @@
 /**
+ * DEV-ONLY (R14, ADR-012).
+ *
+ * This module is NOT used in production. Under the FirecREST
+ * backend, uenv is loaded in Job scripts (F-INV-5), not by cera.
+ * The EnvironmentService interface and types (Environment,
+ * UenvSpec, Module, Conflict) are used by tool-invocation to
+ * construct Job scripts, but the runtime service (mount/unmount/
+ * verify) is only active in dev mode (--backend dev).
+ *
+ * Spec: resolutions-r14.md R14.3; ADR-012;
+ * invariants-firecrest-primary.md FP-INV-3.
+ */
+
+/**
  * EnvironmentService implementation (C5 — uenv).
  *
  * Mounts/unmounts uenvs (squashfs at prescribed paths), checks

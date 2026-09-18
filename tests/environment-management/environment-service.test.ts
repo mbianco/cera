@@ -119,7 +119,7 @@ function createService(overrides: {
 // Tests
 // ============================================================================
 
-describe('EnvironmentServiceImpl', () => {
+describe('@dev-only EnvironmentServiceImpl', () => {
   // ========================================================================
   // checkUenvAvailability (INV-E3)
   // ========================================================================

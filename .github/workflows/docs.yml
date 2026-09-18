@@ -47,8 +47,17 @@ jobs:
       - name: Install MkDocs
         run: pip install mkdocs
 
-      - name: Build site
-        run: mkdocs build --strict
+      - name: Generate build timestamp
+        id: timestamp
+        run: echo "date=$(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> "$GITHUB_OUTPUT"
+
+      - name: Build site with timestamp
+        env:
+          BUILD_DATE: ${{ steps.timestamp.outputs.date }}
+        run: |
+          # Inject build timestamp into the index page
+          sed -i "s/{{BUILD_DATE}}/$BUILD_DATE/g" docs/index.md
+          mkdocs build --strict
 
       - name: Setup Pages
         uses: actions/configure-pages@v6

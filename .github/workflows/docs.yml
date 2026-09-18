@@ -1,8 +1,12 @@
 # Docs — Build and deploy to GitHub Pages
 #
 # Builds the MkDocs site and deploys to GitHub Pages using the
-# official actions/deploy-pages action (no manual gh-pages branch
-# management needed).
+# official actions/deploy-pages action.
+#
+# IMPORTANT: For this workflow to deploy, GitHub Pages must be
+# configured to use "GitHub Actions" as the source (not "Deploy
+# from a branch"). Go to:
+#   Settings → Pages → Build and deployment → Source → "GitHub Actions"
 #
 # Runs on every push to main that changes files in docs/ or
 # mkdocs.yml, plus on workflow_dispatch.
@@ -33,10 +37,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
@@ -47,10 +51,10 @@ jobs:
         run: mkdocs build --strict
 
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: site
 
@@ -65,4 +69,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

@@ -1,18 +1,70 @@
 # API Reference
 
-cera's public surface consists of 7 modules, each exporting a set
-of TypeScript interfaces. All interfaces are backend-agnostic —
-the same interface works with both the local (dsh-adapter) and
-FirecREST (firecrest-adapter) backends.
+cera's public surface consists of 8 modules, each exporting a set of
+TypeScript interfaces. All interfaces are backend-agnostic — the same
+interface works with both the dev (dsh-adapter) and production
+(firecrest-adapter) backends.
+
+## Startup
+
+The `createCeraSystem()` factory wires all 8 modules based on the
+selected backend (ADR-012, R14).
+
+```typescript
+import { createCeraSystem } from 'cera';
+import { OidcTokenProvider } from 'cera';
+
+// Production (FirecREST backend — default)
+const system = createCeraSystem({
+  backend: {
+    type: 'firecrest',
+    firecrestConfig: {
+      firecrestUrl: 'https://firecrest.cscs.ch',
+      systemName: 'daint',
+      tokenProvider: new OidcTokenProvider({
+        tokenEndpoint: 'https://idp.cscs.ch/auth/realms/cscs/protocol/openid-connect/token',
+        clientId: 'cera-client',
+        clientSecret: process.env.CERA_CLIENT_SECRET!,
+      }),
+    },
+  },
+  jobScriptConfig: {
+    uenvSpecs: ['cdo:2.0.5', 'python:3.11.6'],
+  },
+});
+
+// Dev (local backend — development only)
+const devSystem = createCeraSystem({
+  backend: {
+    type: 'dev',
+    dshConfig: { systemName: 'daint' },
+  },
+  username: process.env.USER,
+});
+```
+
+### CeraSystem
+
+| Field | Type | Production | Dev |
+|-------|------|------------|-----|
+| `shellExecutor` | `ShellExecutor` | `FirecrestShellExecutor` | dsh-adapter |
+| `subprocessRunner` | `SubprocessRunner` | `FirecrestSubprocessRunner` | dsh-adapter |
+| `filesystemGateway` | `FilesystemGateway` | `FirecrestFilesystemGateway` | dsh-adapter |
+| `schedulingService` | `SchedulingService` | `FirecRESTSchedulingService` | SLURM CLI |
+| `toolInvocationService` | `ToolInvocationService` | no EnvironmentService (FP-INV-3) | with EnvironmentService |
+| `toolCatalogService` | `ToolCatalogService` | `ToolCatalogServiceImpl` | same |
+| `dataManagementService` | `DataManagementService` | with FirecREST FS | with dsh-adapter FS |
+| `provenanceService` | `ProvenanceService` | with FirecREST FS | with dsh-adapter FS |
+| `environmentService` | `EnvironmentService?` | `undefined` (FP-INV-3) | `EnvironmentServiceImpl` |
+| `backendType` | `'firecrest' \| 'dev'` | `'firecrest'` | `'dev'` |
 
 ## Module index
 
-### dsh-adapter — Local backend
+### dsh-adapter — Dev backend
 
-Wraps dsh's extension points (`ctx.shell`, `ctx.subprocess`,
-`ctx.sandbox`, `ctx.fs`, `ctx.jobs`, `ctx.tools`, `ctx.commands`)
-into stable cera-internal interfaces. This is the only module
-that imports dsh directly (ADR-005).
+Wraps dsh's extension points into stable cera-internal interfaces.
+This is the only module that imports dsh directly (ADR-005). **Dev-only**
+(ADR-012, FP-INV-4).
 
 | Interface | Wraps | Purpose |
 |-----------|-------|---------|
@@ -24,38 +76,33 @@ that imports dsh directly (ADR-005).
 | `ToolRegistry` | `ctx.tools` | Model-facing capability registration |
 | `CommandRegistry` | `ctx.commands` | Human-command dispatch |
 
-```typescript
-import { createDshAdapter } from 'cera';
+### firecrest-adapter — Production backend
 
-const adapter = createDshAdapter(dshContext);
-// adapter.shellExecutor, adapter.subprocessRunner, adapter.filesystemGateway, ...
-```
+Implements the same interfaces as dsh-adapter via FirecREST's REST API
+(ADR-012). All ToolInvocations are submitted as SLURM Jobs (F-INV-6).
+Authentication is OIDC (JWT Bearer token, F-INV-2). HTTPS required
+(FCREST-04). Redirects disabled (FCREST-04).
 
-### firecrest-adapter — Remote backend
+Key types:
 
-Implements the same interfaces as dsh-adapter via FirecREST's REST
-API (ADR-011). All ToolInvocations are submitted as SLURM Jobs
-(F-INV-6). Authentication is OIDC (JWT Bearer token, F-INV-2).
-
-```typescript
-import { createFirecrestBackend, OidcTokenProvider } from 'cera';
-
-const backend = createFirecrestBackend({
-  firecrestUrl: 'https://firecrest.cscs.ch',
-  systemName: 'daint',
-  tokenProvider: new OidcTokenProvider({
-    tokenEndpoint: 'https://idp.cscs.ch/auth/realms/cscs/protocol/openid-connect/token',
-    clientId: 'cera-client',
-    clientSecret: process.env.CERA_CLIENT_SECRET!,
-  }),
-});
-// backend.shellExecutor, backend.subprocessRunner, backend.filesystemGateway, ...
-```
+| Type | Purpose |
+|------|---------|
+| `FirecrestConfig` | URL, system name, token provider, timeouts, transfer method, default ResourceRequest |
+| `JwtTokenProvider` | Interface for token acquisition/refresh |
+| `OidcTokenProvider` | Default impl: client credentials grant |
+| `StaticTokenProvider` | Testing impl: pre-existing token |
+| `JobScriptConfig` | uenv specs + default ResourceRequest for ToolInvocationService |
+| `BackendSelection` | `{ type: 'firecrest' \| 'dev', firecrestConfig?, dshConfig? }` |
+| `CeraSystemConfig` | Backend selection + jobScriptConfig + username |
+| `CeraSystem` | All 8 wired module interfaces + backendType |
 
 ### scheduling — SLURM job management
 
 Submits Jobs via `sbatch`, queries state via `squeue` (active) and
 `sacct` (historical), cancels via `scancel`. SLURM-only (ADR-004).
+**The CLI implementation is dev-only** (ADR-012, FP-INV-4). In
+production, `FirecRESTSchedulingService` implements the same interface
+via FirecREST compute endpoints.
 
 | Method | Description |
 |--------|-------------|
@@ -65,23 +112,29 @@ Submits Jobs via `sbatch`, queries state via `squeue` (active) and
 | `cancelJob(jobId)` | Cancel a Job via `scancel` |
 | `reconcileViaSacct(jobIds)` | Reconcile Job states after SLURM outage (R13) |
 
-### environment-management — uenv management
+### environment-management — uenv management (dev-only runtime)
 
-Mounts/unmounts uenvs (squashfs at prescribed paths). Conflict
-detection at filesystem path level (not Lmod soname, ADR-003).
+Mounts/unmounts uenvs (squashfs at prescribed paths). Conflict detection
+at filesystem path level (not Lmod soname, ADR-003). **The runtime
+service is dev-only** (ADR-012, FP-INV-3). In production, uenv is
+loaded in Job scripts (F-INV-5) and the EnvironmentService is not used.
+
+Types (`Environment`, `UenvSpec`, `Module`, `Conflict`) are used by
+`tool-invocation` to construct Job scripts in production.
 
 | Method | Description |
 |--------|-------------|
-| `checkUenvAvailability(name, version)` | Check if uenv exists in registry (INV-E3) |
-| `loadUenv(request)` | Mount uenv, verify conflict-free (INV-E1, INV-E2) |
-| `unloadUenv(environmentId)` | Unmount uenv |
-| `verifyEnvironment(environmentId)` | Re-verify before invocation (X1 out-of-order) |
-| `detectConflicts(uenvSpecs)` | Detect filesystem path conflicts |
-| `getActiveEnvironment()` | Returns the currently active Environment or null |
+| `checkUenvAvailability(name, version)` | Check if uenv exists in registry (INV-E3, dev-only) |
+| `loadUenv(request)` | Mount uenv, verify conflict-free (INV-E1, INV-E2, dev-only) |
+| `unloadUenv(environmentId)` | Unmount uenv (dev-only) |
+| `verifyEnvironment(environmentId)` | Re-verify before invocation (X1, dev-only) |
+| `detectConflicts(uenvSpecs)` | Detect filesystem path conflicts (dev-only) |
+| `getActiveEnvironment()` | Returns the currently active Environment or null (dev-only) |
 
 ### provenance — Immutable records
 
-Writes immutable ProvenanceRecords (JSON on HPC filesystem).
+Writes immutable ProvenanceRecords (JSON on HPC filesystem). In
+production, writes go through FirecREST file endpoints (F-INV-7).
 Local quarantine (R11) — only the affected Dataset is isolated.
 
 | Method | Description |
@@ -97,7 +150,8 @@ Local quarantine (R11) — only the affected Dataset is isolated.
 ### data-management — Dataset lifecycle
 
 Dataset registration, querying, Location validation, marking
-consumable (joint with provenance, INV-D3/INV-P3).
+consumable (joint with provenance, INV-D3/INV-P3). In production,
+Location validation uses FirecREST stat/list endpoints.
 
 | Method | Description |
 |--------|-------------|
@@ -110,9 +164,11 @@ consumable (joint with provenance, INV-D3/INV-P3).
 
 ### tool-invocation — Tool execution + CESM
 
-Creates and executes ToolInvocations with the full lifecycle:
-validate → verify Environment → validate Locations → start →
-monitor → complete/fail. Strict exit codes by default (ADR-008).
+Creates and executes ToolInvocations with the full lifecycle: validate
+→ (skip Environment in production, FP-INV-3) → validate Locations →
+start → monitor → complete/fail. **All ToolInvocations are parallel in
+production** (F-INV-6) — the `executionModel` field is ignored when
+`jobScriptConfig` is provided. Strict exit codes by default (ADR-008).
 CESM is a Model Tool with a multi-step Case lifecycle (ADR-001).
 
 | Service | Method | Description |
@@ -159,7 +215,7 @@ CeraError (base)
 │   ├── FrameworkBreakingChange (FM-X3)
 │   └── AdapterInternal
 ├── ToolInvocationError
-│   ├── EnvironmentNotLoaded (INV-T1)
+│   ├── EnvironmentNotLoaded (INV-T1, dev-only in production)
 │   ├── InputNotFound (FM-T5)
 │   ├── InputMissingProvenance (INV-D3, INV-W1)
 │   ├── InvalidParameters (FM-A2, FM-T4)
@@ -172,9 +228,9 @@ CeraError (base)
 │   └── OutputLocationNotSet (INV-T9)
 ├── SchedulingError
 │   ├── RejectedByScheduler (FM-S1)
-│   ├── SchedulerUnavailable (FM-S2)
+│   ├── SchedulerUnavailable (FM-S2, dev-only; FM-F-4 in production)
 │   └── StaleQueueData (FM-S3)
-├── EnvironmentError
+├── EnvironmentError (dev-only runtime)
 │   ├── UenvNotFound (FM-E1)
 │   ├── ConflictDetected (FM-E2)
 │   └── PartialLoad (FM-E3)
@@ -198,15 +254,16 @@ CeraError (base)
     └── CaseAlreadyAssigned (R2)
 ```
 
-FirecREST-specific errors (in `firecrest-adapter/types.ts`):
+FirecREST-specific errors (in `firecrest-adapter/types.ts`, production
+only):
 
 ```
 FirecrestError (base)
-├── FirecrestTimeout (FM-F-1)
-├── FirecrestUnauthorized (FM-F-2)
+├── FirecrestTimeout (FM-F-1, F-INV-3)
+├── FirecrestUnauthorized (FM-F-2, F-INV-2)
 ├── FirecrestRateLimited (FM-F-3)
 ├── FirecrestUnavailable (FM-F-4)
 ├── FirecrestSshError (FM-F-5)
 ├── FirecrestSystemNotFound (FM-F-7)
-└── FirecrestFileTooLarge (FM-F-8)
+└── FirecrestFileTooLarge (FM-F-8, F-INV-4)
 ```

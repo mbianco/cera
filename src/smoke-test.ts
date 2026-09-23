@@ -157,7 +157,8 @@ async function main(): Promise<void> {
   // ── Step 3: List files in home directory ──────────────────────
   hr(`Step 3: List files in home directory (GET /filesystem/${SYSTEM}/ops/ls?path=$HOME)`);
 
-  const homePath = process.env.HOME ?? '/home/mbianco';
+  const homePath = process.env.CERA_HOME_PATH ?? '/users/mbianco';
+  const account = process.env.CERA_ACCOUNT ?? 'csstaff';
   try {
     const response = await client.get<unknown>(`/filesystem/${SYSTEM}/ops/ls?path=${encodeURIComponent(homePath)}`);
     if (response.statusCode === 200) {
@@ -211,15 +212,20 @@ async function main(): Promise<void> {
 
   let jobId: number | null = null;
   try {
-    const jobScript = `#!/bin/bash\n#SBATCH --job-name=cera-smoke\n#SBATCH --time=00:01:00\n#SBATCH --nodes=1\n#SBATCH --ntasks=1\necho "cera smoke test $(date)" > /tmp/cera-smoke-${Date.now()}.txt\n`;
+    const jobScript = '#!/bin/bash\n#SBATCH --job-name=cera-smoke\n#SBATCH --time=00:01:00\n#SBATCH --nodes=1\n#SBATCH --ntasks=1\necho "cera smoke test $(date)" > /tmp/cera-smoke-${Date.now()}.txt\n';
     const response = await client.post<unknown>(`/compute/${SYSTEM}/jobs`, {
-      job: jobScript,
+      job: {
+        script: jobScript,
+        workingDirectory: homePath,
+        account,
+      },
     });
 
     if (response.statusCode === 200 || response.statusCode === 201) {
       const body = response.body as Record<string, unknown>;
       // Try different possible response formats
       jobId = typeof body.jobId === 'number' ? body.jobId
+        : typeof body.jobId === 'string' ? Number(body.jobId)
         : typeof body.job_id === 'number' ? body.job_id
         : typeof body.jobid === 'number' ? body.jobid
         : null;

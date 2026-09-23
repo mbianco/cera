@@ -108,12 +108,10 @@ async function main(): Promise<void> {
   // ── Step 2: List systems + health (GET /status/systems) ───────
   hr('Step 2: List systems + health (GET /status/systems)');
 
-  let systemsData: unknown = null;
   try {
-    const response = await client.get<unknown>('/status/systems');
+    const response = await client.get<{ systems?: Array<Record<string, unknown>> }>('/status/systems');
     if (response.statusCode === 200) {
-      systemsData = response.body;
-      const body = response.body as { systems?: Array<Record<string, unknown>> };
+      const body = response.body;
       if (body.systems && Array.isArray(body.systems)) {
         const names = body.systems.map((s) => String(s.name ?? 'unknown'));
         ok(`Systems listed: ${names.join(', ')}`);

@@ -7,6 +7,7 @@ export default defineConfig({
     include: ['tests/**/*.test.ts'],
     exclude: [
       'tests/integration/helpers.ts',
+      'src/smoke-test.ts',
       'node_modules/**',
       'dist/**',
     ],

@@ -1,13 +1,13 @@
 # cera — Tier 3: Full e2e (nightly + pre-release)
 #
-# Runs the full test suite including end-to-end tests against real
-# HPC services (SLURM, uenv, filesystem). Requires a self-hosted
-# runner on the Alps login node.
+# Runs the full test suite with coverage. All tests are mocked —
+# NO real HPC services (SLURM, uenv, FirecREST, CDO, CESM) are
+# accessed in CI.
 #
-# In the absence of a self-hosted HPC runner, this workflow runs
-# the same tests as Tier 2 (all mocked). When a self-hosted runner
-# is available, uncomment the runs-on line and add the HPC test
-# suite.
+# Real HPC testing is done manually by developers using their own
+# credentials. See src/smoke-test.ts. Do NOT add HPC credentials
+# (CERA_CLIENT_ID, CERA_CLIENT_SECRET) to GitHub Secrets or enable
+# the hpc-e2e job below without explicit approval.
 #
 # Spec: ~/.config/opencode/guidelines/ci.md (Tier 3)
 # Spec: specs/architecture/build-phases.md (Tier 3 column)
@@ -50,8 +50,8 @@ jobs:
       - name: Lint
         run: npx eslint src tests --max-warnings=0
 
-      - name: Full test suite (all tiers)
-        run: npx vitest run --coverage
+      - name: Full test suite (all tiers, all mocked)
+        run: npx vitest run --coverage --exclude "src/smoke-test.ts"
 
       - name: Upload coverage
         if: always() && hashFiles('coverage/') != ''
@@ -61,12 +61,18 @@ jobs:
           path: coverage/
           retention-days: 90
 
-  # When a self-hosted Alps runner is available, this job runs
-  # real HPC e2e tests (sbatch, squeue, uenv mount, cdo, etc.).
-  # Uncomment and configure the runner label to enable.
+  # ──────────────────────────────────────────────────────────────
+  # HPC e2e tests — DO NOT ENABLE IN CI
+  #
+  # Real HPC testing (SLURM, uenv, FirecREST, CDO, CESM) is done
+  # manually by developers using their own credentials. The smoke
+  # test (src/smoke-test.ts) is the entry point. Do NOT add HPC
+  # credentials to GitHub Secrets or uncomment this job without
+  # explicit approval from the project lead.
+  # ──────────────────────────────────────────────────────────────
   #
   # hpc-e2e:
-  #   name: HPC End-to-End (Alps)
+  #   name: HPC End-to-End (Alps) — DISABLED, manual only
   #   runs-on: [self-hosted, alps, login]
   #   steps:
   #     - name: Checkout
@@ -75,8 +81,11 @@ jobs:
   #     - name: Install dependencies
   #       run: npm ci || npm install
   #
-  #     - name: Real SLURM + uenv + CDO tests
-  #       run: npx vitest run tests/e2e/** --reporter=verbose
+  #     - name: Smoke test (requires developer credentials)
+  #       run: node dist/smoke-test.mjs
   #       env:
-  #         SLURM_USERNAME: ${{ secrets.SLURM_USERNAME }}
-  #         UENV_REGISTRY: /user-environment/env/
+  #         CERA_CLIENT_ID: ${{ secrets.CERA_CLIENT_ID }}
+  #         CERA_CLIENT_SECRET: ${{ secrets.CERA_CLIENT_SECRET }}
+  #         CERA_TOKEN_ENDPOINT: ${{ secrets.CERA_TOKEN_ENDPOINT }}
+  #         CERA_FIRECREST_URL: ${{ secrets.CERA_FIRECREST_URL }}
+  #         CERA_SYSTEM: ${{ secrets.CERA_SYSTEM }}

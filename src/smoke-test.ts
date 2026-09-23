@@ -155,15 +155,16 @@ async function main(): Promise<void> {
   }
 
   // ── Step 3: List files in home directory ──────────────────────
-  hr(`Step 3: List files in home directory (GET /filesystem/${SYSTEM}/ops/ls?path=~)`);
+  hr(`Step 3: List files in home directory (GET /filesystem/${SYSTEM}/ops/ls?path=$HOME)`);
 
+  const homePath = process.env.HOME ?? '/home/mbianco';
   try {
-    const response = await client.get<unknown>(`/filesystem/${SYSTEM}/ops/ls?path=~`);
+    const response = await client.get<unknown>(`/filesystem/${SYSTEM}/ops/ls?path=${encodeURIComponent(homePath)}`);
     if (response.statusCode === 200) {
       const body = response.body as unknown;
       if (Array.isArray(body)) {
         const entries = body as Array<Record<string, unknown>>;
-        ok(`Listed ${entries.length} entries in home directory`);
+        ok(`Listed ${entries.length} entries in ${homePath}`);
         const names = entries.slice(0, 15).map((e) => {
           const name = String(e.name ?? 'unknown');
           const isDir = e.type === 'd' || e.type === 'directory';
@@ -186,10 +187,10 @@ async function main(): Promise<void> {
   }
 
   // ── Step 4: Stat home directory ───────────────────────────────
-  hr(`Step 4: Stat home directory (GET /filesystem/${SYSTEM}/ops/stat?path=~)`);
+  hr(`Step 4: Stat home directory (GET /filesystem/${SYSTEM}/ops/stat?path=$HOME)`);
 
   try {
-    const response = await client.get<unknown>(`/filesystem/${SYSTEM}/ops/stat?path=~`);
+    const response = await client.get<unknown>(`/filesystem/${SYSTEM}/ops/stat?path=${encodeURIComponent(homePath)}`);
     if (response.statusCode === 200) {
       const stat = response.body as Record<string, unknown>;
       ok(`Stat succeeded (200)`);
@@ -212,7 +213,7 @@ async function main(): Promise<void> {
   try {
     const jobScript = `#!/bin/bash\n#SBATCH --job-name=cera-smoke\n#SBATCH --time=00:01:00\n#SBATCH --nodes=1\n#SBATCH --ntasks=1\necho "cera smoke test $(date)" > /tmp/cera-smoke-${Date.now()}.txt\n`;
     const response = await client.post<unknown>(`/compute/${SYSTEM}/jobs`, {
-      jobScript,
+      job: jobScript,
     });
 
     if (response.statusCode === 200 || response.statusCode === 201) {
